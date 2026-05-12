@@ -1,0 +1,489 @@
+
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500&display=swap');
+  :root {
+    --ink: var(--color-text-primary);
+    --muted: var(--color-text-secondary);
+    --faint: var(--color-text-tertiary);
+    --border: var(--color-border-tertiary);
+    --surface: var(--color-background-secondary);
+    --card: var(--color-background-primary);
+    --navy: #0D2B4E;
+    --teal: #0F6E56;
+    --rust: #8A3A1C;
+    --mono: 'IBM Plex Mono', monospace;
+    --serif: 'Playfair Display', serif;
+    --sans: 'IBM Plex Sans', var(--font-sans), sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  .root { font-family: var(--sans); color: var(--ink); background: transparent; max-width: 680px; padding: 0 0 3rem; }
+
+  .cover { padding: 2.5rem 0 2rem; border-bottom: 0.5px solid var(--border); margin-bottom: 2.5rem; }
+  .domain-pill { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-family: var(--mono); letter-spacing: .08em; color: var(--teal); background: #E1F5EE; border: 0.5px solid #9FE1CB; padding: 4px 10px; border-radius: 20px; margin-bottom: 1rem; }
+  .domain-pill .pip { width: 6px; height: 6px; border-radius: 50%; background: var(--teal); }
+  h1.title { font-family: var(--serif); font-size: 2.1rem; font-weight: 400; line-height: 1.15; color: var(--ink); }
+  h1.title em { font-style: italic; color: var(--navy); }
+  .subtitle { font-size: 13.5px; line-height: 1.75; color: var(--muted); margin-top: .75rem; }
+  .meta-row { display: flex; flex-wrap: wrap; gap: 1.5rem; margin-top: 1.25rem; }
+  .meta { font-size: 12px; color: var(--muted); }
+  .meta strong { display: block; font-size: 10px; font-family: var(--mono); text-transform: uppercase; letter-spacing: .06em; color: var(--faint); margin-bottom: 2px; }
+
+  .toc { background: var(--surface); border-radius: 12px; padding: 1.25rem 1.5rem; margin-bottom: 2.5rem; }
+  .toc-label { font-size: 10px; font-family: var(--mono); text-transform: uppercase; letter-spacing: .08em; color: var(--faint); margin-bottom: .75rem; }
+  .toc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 3px 1.5rem; list-style: none; }
+  .toc-grid a { font-size: 12.5px; color: var(--muted); text-decoration: none; display: flex; gap: 6px; padding: 3px 0; }
+  .toc-grid a:hover { color: var(--ink); }
+  .tn { font-family: var(--mono); font-size: 10px; color: var(--faint); min-width: 18px; }
+
+  section { margin-bottom: 2.5rem; }
+  h2.sec { font-size: 11px; font-family: var(--mono); text-transform: uppercase; letter-spacing: .1em; color: var(--teal); margin-bottom: 1rem; padding-bottom: .5rem; border-bottom: 1.5px solid var(--teal); display: flex; align-items: center; gap: 8px; }
+  h2.sec .sn { color: var(--faint); }
+  h3.sub { font-size: 14.5px; font-weight: 500; color: var(--ink); margin: 1.25rem 0 .5rem; }
+  p { font-size: 13.5px; line-height: 1.75; color: var(--ink); margin-bottom: .75rem; }
+  p.muted { color: var(--muted); font-size: 12.5px; }
+
+  .stat-row { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin: 1.2rem 0; }
+  .stat { background: var(--surface); border-radius: 10px; padding: .875rem 1rem; text-align: center; }
+  .stat .n { font-family: var(--serif); font-size: 1.55rem; color: var(--rust); line-height: 1; }
+  .stat .l { font-size: 11px; color: var(--muted); margin-top: 4px; line-height: 1.4; }
+
+  .highlight { border-left: 3px solid var(--teal); background: var(--card); border-radius: 0 10px 10px 0; border: 0.5px solid var(--border); border-left: 3px solid var(--teal); padding: 1rem 1.25rem; margin: 1rem 0; }
+  .highlight .hl { font-size: 10px; font-family: var(--mono); text-transform: uppercase; letter-spacing: .08em; color: var(--teal); margin-bottom: .35rem; }
+  .highlight p { font-size: 13px; color: var(--muted); margin: 0; line-height: 1.6; }
+
+  .arch { background: var(--surface); border-radius: 12px; padding: 1.5rem; margin: 1.25rem 0; }
+  .arch-label { font-size: 10px; font-family: var(--mono); text-transform: uppercase; letter-spacing: .08em; color: var(--faint); margin-bottom: 1rem; }
+  .layers { display: flex; flex-direction: column; gap: 8px; }
+  .layer { display: flex; align-items: stretch; gap: 8px; }
+  .layer-tag { font-size: 9px; font-family: var(--mono); text-transform: uppercase; letter-spacing: .05em; color: var(--faint); writing-mode: vertical-rl; transform: rotate(180deg); text-align: center; min-width: 26px; }
+  .boxes { display: flex; gap: 8px; flex: 1; flex-wrap: wrap; }
+  .box { flex: 1; min-width: 80px; background: var(--card); border: 0.5px solid var(--border); border-radius: 8px; padding: .6rem .75rem; }
+  .box.t { border-top: 2px solid #3B8BD4; }
+  .box.g { border-top: 2px solid #3B6D11; }
+  .box.a { border-top: 2px solid #BA7517; }
+  .box.r { border-top: 2px solid #A32D2D; }
+  .box.p { border-top: 2px solid #534AB7; }
+  .box.c { border-top: 2px solid var(--teal); }
+  .bt { font-size: 12px; font-weight: 500; color: var(--ink); }
+  .bd { font-size: 11px; color: var(--muted); margin-top: 2px; line-height: 1.4; }
+  .arr-down { display: flex; justify-content: center; height: 14px; align-items: center; }
+  .arr-down::before { content: '↓'; font-size: 11px; color: var(--faint); }
+
+  .feat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 1rem 0; }
+  .fc { background: var(--card); border: 0.5px solid var(--border); border-radius: 10px; padding: .875rem 1rem; }
+  .fc .tag { font-size: 10px; font-family: var(--mono); text-transform: uppercase; letter-spacing: .05em; margin-bottom: .35rem; }
+  .fc .tag.m { color: #A32D2D; }
+  .fc .tag.s { color: #BA7517; }
+  .fc .tag.c { color: #3B6D11; }
+  .fc h4 { font-size: 13px; font-weight: 500; margin-bottom: .25rem; }
+  .fc p { font-size: 12px; color: var(--muted); margin: 0; line-height: 1.5; }
+
+  .score-block { margin: 1rem 0; }
+  .score-row { display: flex; align-items: center; gap: 10px; padding: .45rem 0; border-bottom: 0.5px solid var(--border); }
+  .score-row:last-child { border-bottom: none; }
+  .sl { font-size: 13px; flex: 1; }
+  .bar-wrap { width: 110px; height: 5px; background: var(--surface); border-radius: 3px; overflow: hidden; }
+  .bar { height: 100%; border-radius: 3px; }
+  .sp { font-size: 11px; font-family: var(--mono); color: var(--muted); min-width: 30px; text-align: right; }
+
+  .badge { display: inline-block; font-size: 10px; font-family: var(--mono); padding: 2px 7px; border-radius: 4px; font-weight: 500; }
+  .badge.h { background: #FCEBEB; color: #791F1F; }
+  .badge.m { background: #FAEEDA; color: #633806; }
+  .badge.l { background: #EAF3DE; color: #27500A; }
+
+  .risk-table { width: 100%; border-collapse: collapse; font-size: 12.5px; margin: 1rem 0; }
+  .risk-table th { text-align: left; font-size: 10px; font-family: var(--mono); text-transform: uppercase; letter-spacing: .05em; color: var(--faint); padding: 6px 10px; border-bottom: 0.5px solid var(--border); }
+  .risk-table td { padding: 8px 10px; border-bottom: 0.5px solid var(--border); vertical-align: top; line-height: 1.55; color: var(--muted); }
+  .risk-table tr:last-child td { border-bottom: none; }
+
+  .ms-list { list-style: none; margin: 1rem 0; }
+  .ms-list li { display: flex; gap: 12px; padding: .625rem 0; border-bottom: 0.5px solid var(--border); }
+  .ms-list li:last-child { border-bottom: none; }
+  .ms-ph { font-size: 10px; font-family: var(--mono); text-transform: uppercase; letter-spacing: .05em; color: var(--faint); min-width: 54px; padding-top: 2px; }
+  .ms-body h4 { font-size: 13px; font-weight: 500; }
+  .ms-body p { font-size: 12px; color: var(--muted); margin: 2px 0 0; line-height: 1.5; }
+  .ms-tag { font-size: 10px; font-family: var(--mono); background: var(--surface); color: var(--muted); padding: 2px 7px; border-radius: 4px; display: inline-block; margin-top: 4px; }
+
+  .squad-box { border: 1px solid #9FE1CB; background: #E1F5EE; border-radius: 10px; padding: 1rem 1.25rem; margin: 1rem 0; }
+  .squad-box .sq-t { font-size: 10px; font-family: var(--mono); text-transform: uppercase; letter-spacing: .08em; color: var(--teal); margin-bottom: .5rem; }
+  .squad-box p { font-size: 13px; color: #085041; margin: 0; line-height: 1.65; }
+
+  .kpi-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 10px; margin: 1rem 0; }
+  .kpi { background: var(--surface); border-radius: 10px; padding: .875rem 1rem; }
+  .kpi .kv { font-family: var(--serif); font-size: 1.4rem; color: var(--navy); }
+  .kpi .kl { font-size: 11px; color: var(--muted); margin-top: 3px; line-height: 1.4; }
+
+  .callout { display: flex; gap: 10px; background: var(--surface); border-radius: 10px; padding: 1rem 1.1rem; margin: 1rem 0; }
+  .callout p { font-size: 13px; color: var(--muted); margin: 0; line-height: 1.6; }
+  .co-icon { font-size: 13px; padding-top: 2px; flex-shrink: 0; }
+
+  .flow-steps { display: flex; flex-direction: column; gap: 0; margin: 1rem 0; }
+  .step { display: flex; gap: 12px; padding: .75rem 0; border-bottom: 0.5px solid var(--border); align-items: flex-start; }
+  .step:last-child { border-bottom: none; }
+  .step-num { font-size: 10px; font-family: var(--mono); color: var(--faint); min-width: 20px; padding-top: 2px; }
+  .step-body h4 { font-size: 13px; font-weight: 500; }
+  .step-body p { font-size: 12px; color: var(--muted); margin: 2px 0 0; line-height: 1.5; }
+
+  code { font-family: var(--mono); font-size: 11.5px; background: var(--surface); padding: 2px 5px; border-radius: 4px; color: var(--muted); }
+  hr.div { border: none; border-top: 0.5px solid var(--border); margin: 2rem 0; }
+  .footer { font-size: 11.5px; color: var(--faint); text-align: center; font-family: var(--mono); }
+</style>
+
+<div class="root">
+  <div class="cover">
+    <div class="domain-pill"><span class="pip"></span> PRD — Education Domain</div>
+    <h1 class="title">CertAfrica — <em>Academic Credential</em><br>Verification Engine</h1>
+    <p class="subtitle">An AI-powered document intelligence and institutional cross-verification platform that detects forged academic certificates, fake transcripts, and fraudulent exam results — with a Squad API-gated credential release workflow for employers, institutions, and regulators.</p>
+    <div class="meta-row">
+      <div class="meta"><strong>Version</strong>1.0 — Hackathon Build</div>
+      <div class="meta"><strong>Domain</strong>Education Integrity</div>
+      <div class="meta"><strong>Challenge</strong>Proof of Life — Challenge 01</div>
+      <div class="meta"><strong>Core AI</strong>Computer Vision · NLP · Anomaly Detection</div>
+    </div>
+  </div>
+
+  <nav class="toc">
+    <div class="toc-label">Table of Contents</div>
+    <ul class="toc-grid">
+      <li><a href="#s1"><span class="tn">01</span> Problem Statement</a></li>
+      <li><a href="#s2"><span class="tn">02</span> Solution Overview</a></li>
+      <li><a href="#s3"><span class="tn">03</span> Target Users</a></li>
+      <li><a href="#s4"><span class="tn">04</span> System Architecture</a></li>
+      <li><a href="#s5"><span class="tn">05</span> AI/ML Core Engine</a></li>
+      <li><a href="#s6"><span class="tn">06</span> Feature Requirements</a></li>
+      <li><a href="#s7"><span class="tn">07</span> Squad API Integration</a></li>
+      <li><a href="#s8"><span class="tn">08</span> Verification Score Design</a></li>
+      <li><a href="#s9"><span class="tn">09</span> Edge Cases</a></li>
+      <li><a href="#s10"><span class="tn">10</span> KPIs & Metrics</a></li>
+      <li><a href="#s11"><span class="tn">11</span> Risks & Mitigations</a></li>
+      <li><a href="#s12"><span class="tn">12</span> Roadmap</a></li>
+    </ul>
+  </nav>
+
+  <!-- 01 -->
+  <section id="s1">
+    <h2 class="sec"><span class="sn">01</span> Problem Statement</h2>
+    <p>Academic credential fraud is endemic across Africa and is actively distorting hiring markets, professional licensing, and institutional admissions. Forged WAEC results, purchased university degrees, and fabricated NYSC discharge letters circulate freely — some indistinguishable from genuine documents to the naked eye.</p>
+    <div class="stat-row">
+      <div class="stat"><div class="n">30%</div><div class="l">Of CVs submitted in Nigerian hiring contain at least one unverifiable credential</div></div>
+      <div class="stat"><div class="n">72hrs</div><div class="l">Average manual verification turnaround from WAEC or JAMB — if completed at all</div></div>
+      <div class="stat"><div class="n">₦15B+</div><div class="l">Estimated annual value of fraudulent credentials circulating in West Africa</div></div>
+    </div>
+    <div class="highlight">
+      <div class="hl">The Verification Gap</div>
+      <p>Most employers accept photocopies or PDF scans, with no mechanism to confirm authenticity against issuing institutions. WAEC and NECO do offer online verification portals — but they require manual lookups per candidate, have no API, are frequently slow or unavailable, and are rarely used systematically in hiring pipelines.</p>
+    </div>
+    <div class="highlight">
+      <div class="hl">Why It Cascades</div>
+      <p>A fraudulent medical degree leads to an unqualified doctor practicing. A forged engineering certificate leads to unsafe infrastructure. A fake NYSC letter means someone bypassed national service. Credential fraud is not a white-collar inconvenience — it has downstream physical harm. The consequences are most severe in regulated professions where competence is assumed based on certification.</p>
+    </div>
+  </section>
+
+  <!-- 02 -->
+  <section id="s2">
+    <h2 class="sec"><span class="sn">02</span> Solution Overview</h2>
+    <p><strong>CertChain AI</strong> is a multi-modal credential intelligence platform that accepts a scanned or photographed academic document, runs it through a four-layer AI pipeline, and returns an interpretable <strong>Authenticity Score (0–100)</strong> along with structured entity extraction and an institutional cross-check result.</p>
+    <p>Employers, HR platforms, and licensing bodies integrate CertChain via API. The Squad API integration gates credential-dependent transactions — for example, a professional licensing fee payment, a job offer letter release, or a university admission fee disbursement — until the candidate's credentials clear a configurable authenticity threshold.</p>
+    <div class="callout">
+      <div class="co-icon">→</div>
+      <p>The key architectural insight: CertChain does not replace institutional verification. It <strong>pre-screens at scale</strong> so that the expensive, manual institutional check is only triggered for the small percentage of documents that pass AI pre-screening but warrant human confirmation — inverting the current workflow where everything waits in a manual queue.</p>
+    </div>
+  </section>
+
+  <!-- 03 -->
+  <section id="s3">
+    <h2 class="sec"><span class="sn">03</span> Target Users & Stakeholders</h2>
+    <div class="feat-grid">
+      <div class="fc">
+        <div class="tag m">Primary</div>
+        <h4>HR & Recruitment Teams</h4>
+        <p>Bulk credential verification during hiring. Need fast, API-integrated results that plug into ATS workflows like Workable, BambooHR.</p>
+      </div>
+      <div class="fc">
+        <div class="tag m">Primary</div>
+        <h4>Professional Licensing Bodies</h4>
+        <p>MDCN, COREN, NBA, ICAN — verify academic prerequisites before issuing practicing certificates. High fraud exposure in regulated professions.</p>
+      </div>
+      <div class="fc">
+        <div class="tag s">Secondary</div>
+        <h4>University Admissions Offices</h4>
+        <p>Pre-screen WAEC/NECO/JAMB results for postgraduate and undergraduate applicants before full institutional verification.</p>
+      </div>
+      <div class="fc">
+        <div class="tag s">Secondary</div>
+        <h4>Background Check Companies</h4>
+        <p>Integrate CertChain API as a credential intelligence layer within existing background screening pipelines.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 04 -->
+  <section id="s4">
+    <h2 class="sec"><span class="sn">04</span> System Architecture</h2>
+    <div class="arch">
+      <div class="arch-label">CertChain AI — Data Flow Architecture</div>
+      <div class="layers">
+        <div class="layer">
+          <div class="layer-tag">Input</div>
+          <div class="boxes">
+            <div class="box t"><div class="bt">Document Upload</div><div class="bd">PDF, JPEG, PNG scan — mobile or desktop</div></div>
+            <div class="box t"><div class="bt">Candidate Portal</div><div class="bd">Self-submission with consent and ID linkage</div></div>
+            <div class="box t"><div class="bt">Bulk API Ingest</div><div class="bd">Employer or institution sends batch via REST API</div></div>
+          </div>
+        </div>
+        <div class="arr-down"></div>
+        <div class="layer">
+          <div class="layer-tag">Vision AI</div>
+          <div class="boxes">
+            <div class="box p"><div class="bt">Document Classifier</div><div class="bd">Identifies cert type: WAEC, degree, transcript, NYSC</div></div>
+            <div class="box p"><div class="bt">Forgery Detector</div><div class="bd">CNN trained on tampered vs genuine cert image pairs</div></div>
+            <div class="box p"><div class="bt">OCR + Layout Parser</div><div class="bd">LayoutLM extracts names, grades, dates, institution</div></div>
+            <div class="box p"><div class="bt">Security Feature Check</div><div class="bd">Watermark, seal, hologram presence detection</div></div>
+          </div>
+        </div>
+        <div class="arr-down"></div>
+        <div class="layer">
+          <div class="layer-tag">NLP AI</div>
+          <div class="boxes">
+            <div class="box c"><div class="bt">Entity Cross-Validator</div><div class="bd">Checks extracted entities against known institution schemas</div></div>
+            <div class="box c"><div class="bt">Semantic Anomaly Model</div><div class="bd">BERT detects impossible dates, grades, course combinations</div></div>
+            <div class="box c"><div class="bt">Cert Registry Lookup</div><div class="bd">Query WAEC, JAMB, NYSC verification APIs where available</div></div>
+          </div>
+        </div>
+        <div class="arr-down"></div>
+        <div class="layer">
+          <div class="layer-tag">Scoring</div>
+          <div class="boxes">
+            <div class="box g"><div class="bt">Authenticity Scorer</div><div class="bd">Weighted ensemble → 0–100 score with confidence band</div></div>
+            <div class="box g"><div class="bt">Explainability Layer</div><div class="bd">SHAP-derived plain-English anomaly reasons</div></div>
+            <div class="box r"><div class="bt">Decision Gate</div><div class="bd">Auto-pass / review / reject per threshold config</div></div>
+          </div>
+        </div>
+        <div class="arr-down"></div>
+        <div class="layer">
+          <div class="layer-tag">Payment</div>
+          <div class="boxes">
+            <div class="box a"><div class="bt">Squad API Gateway</div><div class="bd">Gates fee payment, offer release, or admission trigger</div></div>
+            <div class="box a"><div class="bt">Audit Ledger</div><div class="bd">Immutable per-document verification record</div></div>
+            <div class="box a"><div class="bt">Webhook Notifier</div><div class="bd">Employer / institution notified of outcome instantly</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 05 -->
+  <section id="s5">
+    <h2 class="sec"><span class="sn">05</span> AI / ML Core Engine</h2>
+
+    <h3 class="sub">5.1 — Document Classification & Type Detection</h3>
+    <p>A <strong>ResNet-50 fine-tuned classifier</strong> first identifies the document type from the uploaded image — WAEC result checker, NECO certificate, university degree scroll, HND transcript, NYSC discharge letter, professional cert, or unknown. Type classification determines which downstream model pipeline and schema to apply. An unknown or ambiguous document type automatically triggers a human review flag regardless of other scores.</p>
+
+    <h3 class="sub">5.2 — Forgery Detection (Computer Vision)</h3>
+    <p>This is the technical centrepiece. A <strong>twin-branch CNN</strong> (EfficientNet-B4 backbone) is trained on pairs of genuine and manipulated certificate images. The model detects:</p>
+    <p class="muted">Font inconsistencies (character spacing, weight mismatch across lines) · Image splicing artefacts detected via Error Level Analysis (ELA) · Missing or degraded security features (watermarks, embossed seals, holographic strips) · Pixel-level tampering signatures in grade fields and name blocks · Inconsistent JPEG compression levels suggesting localised editing</p>
+    <p>Training data is built from: genuine documents collected with institutional consent, synthetically generated tampered versions using known forgery techniques (Photoshop, online certificate generators), and augmented with noise, scan distortions, and lighting variation to ensure robustness to real-world scan quality.</p>
+
+    <h3 class="sub">5.3 — Entity Extraction & Semantic Validation (NLP)</h3>
+    <p>A <strong>LayoutLM v3 model</strong> — designed specifically for visually rich documents — extracts structured entities: candidate name, exam number, year, institution, subject grades, and awarding body. These are cross-validated against a curated schema database of known valid institution names, course codes, grading systems, and date ranges.</p>
+    <p>A <strong>BERT-based anomaly classifier</strong> then checks for semantic impossibilities: a degree dated before the institution was accredited, a grade of A1 in a subject WAEC discontinued in that year, a university transcript citing a course combination that doesn't exist in any Nigerian curriculum, or an institution name that is a slight variant of a real one (a common cheap forgery signal).</p>
+
+    <h3 class="sub">5.4 — Institutional Registry Cross-Check</h3>
+    <p>For documents from institutions with available APIs or queryable registries — WAEC online verification, NYSC verification portal, JAMB CAPS — CertChain performs a live lookup using the extracted exam number or registration number. For institutions without live APIs, CertChain queries its own <strong>institutional pattern database</strong> (document format signatures, certificate number ranges, stamp designs per institution per year) built from verified historical samples.</p>
+
+    <h3 class="sub">5.5 — Anomaly Network Detection</h3>
+    <p>A lightweight <strong>graph anomaly model</strong> detects coordinated forgery rings: if 15 candidates from the same employer submission share suspiciously similar document templates, serial number formats, or extraction fingerprints, the entire batch is flagged for elevated review — even if individual documents score acceptably on their own.</p>
+  </section>
+
+  <!-- 06 -->
+  <section id="s6">
+    <h2 class="sec"><span class="sn">06</span> Feature Requirements</h2>
+    <div class="feat-grid">
+      <div class="fc">
+        <div class="tag m">Must Have</div>
+        <h4>Document Upload & Multi-Format Support</h4>
+        <p>Accept PDF, JPEG, PNG up to 20MB. Mobile camera capture supported. Batch upload via API for employers.</p>
+      </div>
+      <div class="fc">
+        <div class="tag m">Must Have</div>
+        <h4>Authenticity Score + Explainability</h4>
+        <p>0–100 score per document with plain-English flag reasons. E.g., "Grade field shows font inconsistency with rest of document."</p>
+      </div>
+      <div class="fc">
+        <div class="tag m">Must Have</div>
+        <h4>Structured Entity Extraction</h4>
+        <p>Return extracted name, institution, year, grades as structured JSON alongside the score for downstream system use.</p>
+      </div>
+      <div class="fc">
+        <div class="tag m">Must Have</div>
+        <h4>Squad API Payment Gate</h4>
+        <p>Block credential-dependent payments (licensing fee, admission deposit) until authenticity threshold is met. Full reviewer override workflow.</p>
+      </div>
+      <div class="fc">
+        <div class="tag s">Should Have</div>
+        <h4>Live Registry Query</h4>
+        <p>Real-time WAEC / JAMB / NYSC verification lookup for documents with extractable exam numbers.</p>
+      </div>
+      <div class="fc">
+        <div class="tag s">Should Have</div>
+        <h4>Candidate Self-Verification Portal</h4>
+        <p>Candidates submit documents themselves and receive a shareable CertChain verification link — portable proof of authenticity.</p>
+      </div>
+      <div class="fc">
+        <div class="tag c">Could Have</div>
+        <h4>Batch Anomaly Detection</h4>
+        <p>Flag suspicious similarity patterns across a bulk employer submission — detects coordinated forgery rings.</p>
+      </div>
+      <div class="fc">
+        <div class="tag c">Could Have</div>
+        <h4>ATS Integration Webhooks</h4>
+        <p>Push verification outcomes directly to Workable, BambooHR, Greenhouse — no manual checking of a separate dashboard.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 07 -->
+  <section id="s7">
+    <h2 class="sec"><span class="sn">07</span> Squad API Integration</h2>
+    <div class="squad-box">
+      <div class="sq-t">Integration Strategy — Credential-Gated Transactions</div>
+      <p>Squad API connects CertChain to the real-world financial consequences of credential fraud. Rather than merely flagging a forged document and sending an email, CertChain makes the credential outcome <strong>economically enforceable</strong> — no payment moves until the document clears.</p>
+    </div>
+
+    <h3 class="sub">Core Integration Flows</h3>
+    <div class="flow-steps">
+      <div class="step">
+        <div class="step-num">01</div>
+        <div class="step-body">
+          <h4>Professional Licensing Fee Gate</h4>
+          <p>A medical council collects licensing fees via Squad. CertChain issues a <code>credential_token</code> only after the applicant's MBBS degree passes the authenticity threshold. The Squad payment link is conditionally activated — before the token is issued, the payment page shows "Credential verification pending."</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">02</div>
+        <div class="step-body">
+          <h4>University Admission Deposit Hold</h4>
+          <p>Applicant pays admission deposit via Squad into a held escrow state. CertChain verifies the submitted WAEC/JAMB results. On passing, <code>POST /v1/disbursement/release</code> moves the deposit to the institution's settlement account. On failure, <code>POST /v1/transaction/reversal</code> refunds the candidate.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">03</div>
+        <div class="step-body">
+          <h4>Employer Pre-Employment Payment Hold</h4>
+          <p>Background check firms charge employers per verified candidate. CertChain completes verification, then triggers a conditional Squad payout to the employer's API integration partner. Failed verifications generate a rejection webhook with the specific anomaly flags returned to the employer system.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">04</div>
+        <div class="step-body">
+          <h4>Audit Webhook Receipts</h4>
+          <p>Every Squad transaction event — initiated, held, released, reversed — is written to CertChain's immutable audit ledger with the associated <code>document_id</code>, <code>authenticity_score</code>, and reviewer action. Creates a tamper-proof chain from document submission to financial outcome.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 08 -->
+  <section id="s8">
+    <h2 class="sec"><span class="sn">08</span> Authenticity Score Design</h2>
+    <p>Each document receives a composite Authenticity Score (0–100) from a weighted ensemble of five signal groups:</p>
+    <div class="score-block">
+      <div class="score-row"><span class="sl">Visual Forgery Detection (CNN)</span><div class="bar-wrap"><div class="bar" style="width:35%;background:#534AB7"></div></div><span class="sp">35%</span></div>
+      <div class="score-row"><span class="sl">Security Feature Integrity</span><div class="bar-wrap"><div class="bar" style="width:20%;background:#0F6E56"></div></div><span class="sp">20%</span></div>
+      <div class="score-row"><span class="sl">Semantic Entity Validation</span><div class="bar-wrap"><div class="bar" style="width:20%;background:#185FA5"></div></div><span class="sp">20%</span></div>
+      <div class="score-row"><span class="sl">Registry Cross-Check</span><div class="bar-wrap"><div class="bar" style="width:15%;background:#BA7517"></div></div><span class="sp">15%</span></div>
+      <div class="score-row"><span class="sl">Batch Anomaly Signal</span><div class="bar-wrap"><div class="bar" style="width:10%;background:#993C1D"></div></div><span class="sp">10%</span></div>
+    </div>
+    <p><strong>Score bands:</strong> &nbsp;<span class="badge l">85–100 Verified — auto-pass</span>&nbsp; <span class="badge m">55–84 Inconclusive — human review</span>&nbsp; <span class="badge h">0–54 High-risk — reject / hold</span></p>
+    <p class="muted" style="margin-top:.5rem">Registry cross-check weight increases to 40% if a live WAEC/JAMB lookup succeeds — in that case the registry result dominates and all other signals are secondary. This reflects that a confirmed institutional match is the ground truth no AI model can supersede.</p>
+  </section>
+
+  <!-- 09 -->
+  <section id="s9">
+    <h2 class="sec"><span class="sn">09</span> Edge Cases & Adversarial Handling</h2>
+    <table class="risk-table">
+      <thead><tr><th>Scenario</th><th>System Response</th><th>Fallback</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Poor scan quality</strong> — blurry phone photo, skewed angle</td><td>Image quality score computed pre-pipeline. Score below threshold prompts user to re-upload. Partial scoring runs on readable regions.</td><td>Score capped at 60 if quality is insufficient; manual review triggered</td></tr>
+        <tr><td><strong>Genuinely old document</strong> — pre-digital cert from 1985, no registry record</td><td>Registry weight zeroed; model shifts to pure visual + semantic analysis. Age-appropriate template used from historical schema database.</td><td>Reviewer notified that registry check not available; physical verification recommended</td></tr>
+        <tr><td><strong>Foreign credential</strong> — degree from non-Nigerian institution</td><td>Institution classifier routes to international schema. NyIF / NANNM verification framework applied if available.</td><td>Score capped; manual expert review for unknown foreign institutions</td></tr>
+        <tr><td><strong>Adversarial forgery</strong> — high-quality fake designed to defeat AI</td><td>Batch anomaly detection can still flag coordinated submissions. Registry lookup remains ground truth if available. ELA pixel analysis detects editing even in high-quality fakes.</td><td>Escalated to human forensic reviewer; Squad gate remains held pending outcome</td></tr>
+        <tr><td><strong>Registry API downtime</strong> — WAEC portal offline</td><td>Registry weight redistributed to other signals. Score band widens (confidence interval flagged to reviewer). System does not fail — operates in degraded mode.</td><td>Reviewer notified of degraded mode; manual WAEC check recommended for borderline scores</td></tr>
+        <tr><td><strong>False positive on legitimate cert</strong> — genuine cert flagged as forged</td><td>Every rejection includes specific, explainable reasons. Candidate can appeal with additional evidence. Override requires reviewer + supervisor dual approval to prevent single-point abuse.</td><td>Appeal outcome used to retrain model; false positive rate tracked monthly per document type</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- 10 -->
+  <section id="s10">
+    <h2 class="sec"><span class="sn">10</span> KPIs & Success Metrics</h2>
+    <div class="kpi-grid">
+      <div class="kpi"><div class="kv">&lt; 4%</div><div class="kl">False positive rate on a labelled test set of 2,000 genuine documents</div></div>
+      <div class="kpi"><div class="kv">&gt; 94%</div><div class="kl">Detection precision on injected forgery test set across WAEC, degree, NYSC types</div></div>
+      <div class="kpi"><div class="kv">&lt; 90s</div><div class="kl">End-to-end verification time per document from upload to score</div></div>
+      <div class="kpi"><div class="kv">&gt; 80%</div><div class="kl">Share of submissions auto-resolved (no human review needed) at launch</div></div>
+    </div>
+    <p class="muted" style="margin-top:.75rem">Secondary metrics: reviewer decision time (target &lt; 10 min per flagged document), appeal overturn rate (high rate signals model bias), cost per verification at scale (target &lt; ₦200 per document), Squad API reversal success rate within settlement window.</p>
+  </section>
+
+  <!-- 11 -->
+  <section id="s11">
+    <h2 class="sec"><span class="sn">11</span> Risks & Mitigations</h2>
+    <table class="risk-table">
+      <thead><tr><th>Risk</th><th>Severity</th><th>Mitigation</th></tr></thead>
+      <tbody>
+        <tr><td>Training data scarcity — hard to collect genuine cert samples at scale</td><td><span class="badge h">High</span></td><td>Partner with 2–3 pilot institutions for anonymised genuine document access. Supplement with synthetic augmentation. Use self-supervised pre-training on document images before fine-tuning on certs.</td></tr>
+        <tr><td>Model flags low-income candidates more (poor scan quality correlates with socioeconomic status)</td><td><span class="badge h">High</span></td><td>Fairness audit stratified by scan quality quartile. Quality-gated scoring (cap, don't penalise) with clear re-upload guidance. Mobile-optimised capture UI reduces scan quality variance.</td></tr>
+        <tr><td>Institutions change certificate formats annually — model becomes stale</td><td><span class="badge m">Medium</span></td><td>Institutional schema database versioned by year. Active monitoring for model drift on new-year submissions. Partner institutions notify CertChain of format changes.</td></tr>
+        <tr><td>Privacy — personal academic records stored and processed</td><td><span class="badge m">Medium</span></td><td>No raw document stored after scoring. Extracted entities retained with candidate consent only. NDPR compliance built in from day one. Data residency in Nigerian cloud infrastructure.</td></tr>
+        <tr><td>Regulatory resistance from WAEC / JAMB on API access</td><td><span class="badge m">Medium</span></td><td>System designed to function without official APIs — registry lookup is a bonus, not a dependency. MOU pathway with WAEC/JAMB included in go-to-market plan.</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- 12 -->
+  <section id="s12">
+    <h2 class="sec"><span class="sn">12</span> Roadmap</h2>
+    <ul class="ms-list">
+      <li>
+        <div class="ms-ph">Week 1–2</div>
+        <div class="ms-body">
+          <h4>MVP / Hackathon Demo</h4>
+          <p>Document upload UI, WAEC result sheet classifier + forgery detector (trained on synthetic dataset), authenticity score dashboard, Squad API gate demo blocking a licensing fee payment until cert passes.</p>
+          <span class="ms-tag">Hackathon scope</span>
+        </div>
+      </li>
+      <li>
+        <div class="ms-ph">Month 1–2</div>
+        <div class="ms-body">
+          <h4>Pilot — Two Professional Licensing Bodies</h4>
+          <p>MDCN or COREN pilot with 500 real applications. Collect ground-truth labels. Measure false positive rate. Train on real institutional documents with consent.</p>
+          <span class="ms-tag">Pilot phase</span>
+        </div>
+      </li>
+      <li>
+        <div class="ms-ph">Month 3–5</div>
+        <div class="ms-body">
+          <h4>Registry Integration + Employer API</h4>
+          <p>WAEC live lookup integration, REST API for employer and ATS integration, batch processing for HR firms, candidate self-verification portal with shareable link.</p>
+          <span class="ms-tag">Scale phase</span>
+        </div>
+      </li>
+      <li>
+        <div class="ms-ph">Month 6–12</div>
+        <div class="ms-body">
+          <h4>West Africa Expansion + Foreign Credentials</h4>
+          <p>Add Ghana WAEC, ECOWAS institution schemas. Foreign credential routing. University admissions integration. B2B SaaS pricing for background check firms.</p>
+          <span class="ms-tag">Growth phase</span>
+        </div>
+      </li>
+    </ul>
+    <div class="callout" style="margin-top:1.5rem">
+      <div class="co-icon">→</div>
+      <p>For the hackathon demo: (1) upload a synthetic forged WAEC result sheet — model flags the font inconsistency in the grade column; (2) upload a genuine version — model passes it; (3) show Squad API blocking a ₦50,000 licensing fee payment for the forged submission, then releasing it for the genuine one. All live, all explainable.</p>
+    </div>
+  </section>
+
+  <hr class="div">
+  <p class="footer">CertChain AI — PRD v1.0 · Challenge 01: Proof of Life · Education Domain</p>
+</div>

@@ -1,0 +1,463 @@
+import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { AnimatePresence, motion } from "motion/react";
+import { Link } from "react-router";
+import {
+  AlertCircle,
+  CreditCard,
+  FileText,
+  Loader2,
+  LogIn,
+  RefreshCw,
+  ShieldCheck,
+  Sparkles,
+  Upload,
+  Wallet,
+} from "lucide-react";
+import { toast } from "sonner";
+import { ScoreRing } from "../components/ScoreRing";
+import { useAuth } from "../context/AuthContext";
+import { api, extractCheckoutUrl, type ApiError } from "../lib/api";
+import type { PaymentCheckoutResponse, Scan, ScanSubmissionResponse, ScanUsageSummary, Wallet as WalletType } from "../lib/types";
+
+function formatCurrency(value: string | number | undefined, currency = "NGN") {
+  const amount = typeof value === "string" ? Number.parseFloat(value) : value ?? 0;
+  return new Intl.NumberFormat("en-NG", { style: "currency", currency, maximumFractionDigits: 2 }).format(Number.isFinite(amount) ? amount : 0);
+}
+
+function scanLabel(value: string) {
+  return value.replaceAll("_", " ");
+}
+
+function scoreForScan(scan: Scan | null) {
+  if (!scan) return 0;
+  if (typeof scan.trustScore === "number") return Math.round(scan.trustScore);
+  if (scan.verificationStatus === "VERIFIED") return 91;
+  if (scan.verificationStatus === "INCONCLUSIVE") return 66;
+  if (scan.verificationStatus === "FLAGGED") return 34;
+  if (scan.verificationStatus === "FAILED") return 22;
+  if (scan.status === "PROCESSING") return 52;
+  return 58;
+}
+
+export function VerifyPage() {
+  const { status, user, isAuthenticated, login, signup } = useAuth();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [mode, setMode] = useState<"signin" | "signup">("signin");
+  const [authForm, setAuthForm] = useState({ name: "", email: "", password: "" });
+  const [authBusy, setAuthBusy] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [dropActive, setDropActive] = useState(false);
+  const [uploadResult, setUploadResult] = useState<ScanSubmissionResponse | null>(null);
+  const [checkoutResult, setCheckoutResult] = useState<PaymentCheckoutResponse | null>(null);
+  const [wallet, setWallet] = useState<WalletType | null>(null);
+  const [usage, setUsage] = useState<ScanUsageSummary | null>(null);
+  const [recentScans, setRecentScans] = useState<Scan[]>([]);
+  const [loadingWorkspace, setLoadingWorkspace] = useState(false);
+  const [workspaceError, setWorkspaceError] = useState<string | null>(null);
+
+  const loadWorkspace = useCallback(async () => {
+    if (!isAuthenticated) return;
+    setLoadingWorkspace(true);
+    setWorkspaceError(null);
+
+    try {
+      const [walletResponse, scansResponse, usageResponse] = await Promise.all([
+        api.getWallet().catch(() => null),
+        api.getScans(1, 5),
+        api.getScanUsage().catch(() => null),
+      ]);
+
+      setWallet(walletResponse);
+      setRecentScans(scansResponse.items);
+      setUsage(usageResponse);
+    } catch (error) {
+      setWorkspaceError(error instanceof Error ? error.message : "Unable to load the verification workspace.");
+    } finally {
+      setLoadingWorkspace(false);
+    }
+  }, [isAuthenticated]);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      void loadWorkspace();
+    }
+  }, [isAuthenticated, loadWorkspace]);
+
+  const handleAuthSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setAuthBusy(true);
+    setAuthError(null);
+
+    try {
+      if (mode === "signin") {
+        await login({ email: authForm.email, password: authForm.password });
+        toast.success("Signed in successfully");
+      } else {
+        await signup({ name: authForm.name, email: authForm.email, password: authForm.password });
+        toast.success("Account created successfully");
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Authentication failed.";
+      setAuthError(message);
+      toast.error(message);
+    } finally {
+      setAuthBusy(false);
+    }
+  };
+
+  const handleVerification = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!selectedFile) {
+      toast.error("Please choose a certificate file first.");
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      const submission = await api.submitScan(selectedFile);
+      setUploadResult(submission);
+      setCheckoutResult(null);
+      toast.success("Certificate uploaded successfully");
+
+      if (submission.paymentRequired && submission.transaction) {
+        const payment = await api.initializePayment({ type: "scan", scanId: submission.scan.id });
+        setCheckoutResult(payment);
+        const checkoutUrl = extractCheckoutUrl(payment.checkout);
+        if (checkoutUrl) {
+          window.open(checkoutUrl, "_blank", "noopener,noreferrer");
+        }
+      }
+
+      await loadWorkspace();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unable to submit your certificate.";
+      toast.error(message);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleCheckPayment = async () => {
+    if (!uploadResult?.transaction?.reference) return;
+
+    try {
+      const result = await api.verifyPayment(uploadResult.transaction.reference);
+      if (result.processed) {
+        toast.success("Payment verified and scan queued.");
+        await loadWorkspace();
+      } else {
+        toast.message(result.paymentStatus ? `Payment still ${result.paymentStatus}.` : "Payment still processing.");
+      }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Unable to verify payment right now.");
+    }
+  };
+
+  const totalScans = recentScans.length;
+  const queuedScans = useMemo(() => recentScans.filter((scan) => scan.status === "QUEUED" || scan.status === "PROCESSING").length, [recentScans]);
+  const plan = user?.plan ?? "FREE";
+  const showWallet = plan !== "FREE";
+
+  if (status === "loading") {
+    return (
+      <div className="min-h-[calc(100vh-64px)] pt-16 flex items-center justify-center px-6">
+        <div className="text-center">
+          <Loader2 className="mx-auto mb-3 animate-spin" size={28} color="#12A37B" />
+          <p style={{ color: "rgba(176,196,222,0.7)" }}>Loading your secure workspace…</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen pt-16 px-6 md:px-10 py-10">
+        <div className="max-w-6xl mx-auto grid lg:grid-cols-[1.1fr_0.9fr] gap-6 items-start">
+          <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="rounded-3xl p-8 md:p-10" style={{ background: "linear-gradient(160deg, rgba(15,110,86,0.14), rgba(255,255,255,0.03))", border: "1px solid rgba(255,255,255,0.08)" }}>
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full mb-5" style={{ background: "rgba(18,163,123,0.12)", border: "1px solid rgba(18,163,123,0.28)" }}>
+              <ShieldCheck size={14} color="#12A37B" />
+              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "#12A37B", letterSpacing: "0.08em" }}>SECURE VERIFICATION FLOW</span>
+            </div>
+            <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: "clamp(2rem, 5vw, 3.2rem)", color: "#F0F6FF", lineHeight: 1.1, marginBottom: "14px" }}>
+              Authenticate first, then verify faster.
+            </h1>
+            <p style={{ color: "rgba(176,196,222,0.72)", lineHeight: 1.75, maxWidth: "62ch" }}>
+              The backend requires a valid bearer token for uploads, scan history, wallet access, and payment checks. Sign in or create an account to unlock the certificate workflow.
+            </p>
+            <div className="grid sm:grid-cols-3 gap-3 mt-8">
+              {[
+                { title: "Upload", text: "Send PDF, PNG, JPG certificates securely to the backend." },
+                { title: "Pay", text: "Initialize Squad checkout when a scan requires payment." },
+                { title: "Track", text: "Follow scan status, wallet balance, and result history." },
+              ].map((item) => (
+                <div key={item.title} className="rounded-2xl p-4" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)" }}>
+                  <div style={{ color: "#F0F6FF", fontSize: "14px", fontWeight: 600, marginBottom: "6px" }}>{item.title}</div>
+                  <div style={{ color: "rgba(176,196,222,0.55)", fontSize: "12px", lineHeight: 1.6 }}>{item.text}</div>
+                </div>
+              ))}
+            </div>
+          </motion.div>
+
+          <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.08 }} className="rounded-3xl p-6 md:p-8" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" }}>
+            <div className="flex items-center justify-between mb-5">
+              <div>
+                <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "rgba(176,196,222,0.4)", letterSpacing: "0.08em" }}>AUTHENTICATION</div>
+                <h2 style={{ fontFamily: "'IBM Plex Sans', sans-serif", color: "#F0F6FF", fontSize: "1.2rem", marginTop: "4px" }}>{mode === "signin" ? "Welcome back" : "Create your workspace"}</h2>
+              </div>
+              <div className="inline-flex rounded-xl p-1" style={{ background: "rgba(255,255,255,0.04)" }}>
+                {(["signin", "signup"] as const).map((item) => (
+                  <button key={item} type="button" onClick={() => setMode(item)} className="px-3 py-1.5 rounded-lg" style={{ background: mode === item ? "rgba(18,163,123,0.16)" : "transparent", color: mode === item ? "#12A37B" : "rgba(176,196,222,0.7)", border: "none", fontSize: "12px" }}>
+                    {item === "signin" ? "Sign in" : "Sign up"}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <form className="space-y-4" onSubmit={handleAuthSubmit}>
+              {mode === "signup" && (
+                <label className="block">
+                  <span className="block mb-1 text-sm" style={{ color: "rgba(176,196,222,0.8)" }}>Full name</span>
+                  <input value={authForm.name} onChange={(event) => setAuthForm((current) => ({ ...current, name: event.target.value }))} className="w-full rounded-xl px-4 py-3" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", color: "#F0F6FF" }} placeholder="Adaeze Nwosu" required />
+                </label>
+              )}
+              <label className="block">
+                <span className="block mb-1 text-sm" style={{ color: "rgba(176,196,222,0.8)" }}>Email</span>
+                <input value={authForm.email} onChange={(event) => setAuthForm((current) => ({ ...current, email: event.target.value }))} type="email" className="w-full rounded-xl px-4 py-3" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", color: "#F0F6FF" }} placeholder="you@company.com" required />
+              </label>
+              <label className="block">
+                <span className="block mb-1 text-sm" style={{ color: "rgba(176,196,222,0.8)" }}>Password</span>
+                <input value={authForm.password} onChange={(event) => setAuthForm((current) => ({ ...current, password: event.target.value }))} type="password" className="w-full rounded-xl px-4 py-3" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", color: "#F0F6FF" }} placeholder="At least 8 characters" required minLength={8} />
+              </label>
+
+              {authError && (
+                <div className="flex items-start gap-2 rounded-xl px-4 py-3" style={{ background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.18)" }}>
+                  <AlertCircle size={16} color="#EF4444" className="mt-0.5" />
+                  <p className="m-0 text-sm" style={{ color: "rgba(255,255,255,0.82)" }}>{authError}</p>
+                </div>
+              )}
+
+              <button type="submit" disabled={authBusy} className="w-full inline-flex items-center justify-center gap-2 rounded-xl px-4 py-3 transition-opacity disabled:opacity-60" style={{ background: "linear-gradient(135deg, #0F6E56, #12A37B)", color: "white", fontWeight: 600 }}>
+                {authBusy ? <Loader2 size={16} className="animate-spin" /> : <LogIn size={16} />}
+                {mode === "signin" ? "Sign in and continue" : "Create account"}
+              </button>
+            </form>
+          </motion.div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen pt-16 px-6 md:px-10 py-10">
+      <div className="max-w-6xl mx-auto space-y-6">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-2 mb-2 text-xs" style={{ color: "rgba(176,196,222,0.45)", letterSpacing: "0.08em" }}>
+              <Link to="/" className="no-underline" style={{ color: "inherit" }}>Home</Link>
+              <span>/</span>
+              <span style={{ color: "#12A37B" }}>Verify</span>
+            </div>
+            <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: "clamp(1.8rem, 4vw, 2.6rem)", color: "#F0F6FF", lineHeight: 1.1, marginBottom: "6px" }}>
+              Verification workspace
+            </h1>
+            <p style={{ color: "rgba(176,196,222,0.62)" }}>
+              Upload a certificate, initialize payment when required, and monitor queued scans in real time.
+            </p>
+          </div>
+          <button type="button" onClick={() => void loadWorkspace()} className="inline-flex items-center gap-2 rounded-xl px-4 py-2.5" style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)", color: "rgba(176,196,222,0.8)" }}>
+            <RefreshCw size={14} />
+            Refresh
+          </button>
+        </div>
+
+        <div className="grid lg:grid-cols-[1.1fr_0.9fr] gap-6 items-start">
+          <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
+            <div className="grid sm:grid-cols-3 gap-4">
+              {[
+                { label: "Remaining scans", value: usage ? String(usage.monthlyRemaining) : "—", icon: Sparkles },
+                { label: "Recent scans", value: String(totalScans), icon: FileText },
+                { label: showWallet ? "Wallet balance" : "Pay per scan", value: showWallet ? (wallet ? formatCurrency(wallet.balance, wallet.currency) : "—") : "₦500", icon: Wallet },
+              ].map((item) => (
+                <div key={item.label} className="rounded-2xl p-5" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)" }}>
+                  <div className="flex items-center justify-between mb-4">
+                    <item.icon size={16} color="#12A37B" />
+                    <span style={{ fontSize: "9px", color: "rgba(176,196,222,0.35)", letterSpacing: "0.08em" }}>LIVE</span>
+                  </div>
+                  <div style={{ fontFamily: "'Playfair Display', serif", fontSize: "1.6rem", color: "#F0F6FF", marginBottom: "4px" }}>{item.value}</div>
+                  <div style={{ color: "rgba(176,196,222,0.62)", fontSize: "12px" }}>{item.label}</div>
+                </div>
+              ))}
+            </div>
+
+            {plan === "FREE" && usage?.monthlyRemaining === 0 && (
+              <div className="rounded-2xl p-4 text-sm" style={{ background: "rgba(245,158,11,0.12)", border: "1px solid rgba(245,158,11,0.22)", color: "rgba(255,255,255,0.86)" }}>
+                Free scans are exhausted. Pay ₦500 to verify the next certificate.
+              </div>
+            )}
+
+            <form onSubmit={handleVerification} className="rounded-3xl p-6 md:p-7" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" }}>
+              <div className="flex items-center justify-between gap-4 mb-5">
+                <div>
+                  <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "rgba(176,196,222,0.38)", letterSpacing: "0.08em" }}>DOCUMENT UPLOAD</div>
+                  <h2 style={{ color: "#F0F6FF", fontSize: "1.15rem", marginTop: "4px" }}>Submit a certificate for AI analysis</h2>
+                </div>
+                <div className="rounded-xl px-3 py-2" style={{ background: "rgba(18,163,123,0.08)", border: "1px solid rgba(18,163,123,0.18)" }}>
+                  <div style={{ fontSize: "10px", color: "#12A37B", letterSpacing: "0.08em" }}>{user?.plan ?? "FREE"}</div>
+                </div>
+              </div>
+
+              <div
+                onDragOver={(event) => { event.preventDefault(); setDropActive(true); }}
+                onDragLeave={() => setDropActive(false)}
+                onDrop={(event) => {
+                  event.preventDefault();
+                  setDropActive(false);
+                  setSelectedFile(event.dataTransfer.files?.[0] ?? null);
+                }}
+                onClick={() => fileInputRef.current?.click()}
+                className="rounded-3xl p-8 text-center cursor-pointer transition-all"
+                style={{ background: dropActive ? "rgba(18,163,123,0.08)" : "rgba(255,255,255,0.02)", border: `1.5px dashed ${dropActive ? "rgba(18,163,123,0.55)" : "rgba(255,255,255,0.08)"}` }}
+              >
+                <input ref={fileInputRef} type="file" accept=".pdf,.jpg,.jpeg,.png" hidden onChange={(event) => setSelectedFile(event.target.files?.[0] ?? null)} />
+                <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl" style={{ background: "rgba(18,163,123,0.1)", border: "1px solid rgba(18,163,123,0.18)" }}>
+                  <Upload size={24} color="#12A37B" />
+                </div>
+                <h3 style={{ color: "#F0F6FF", fontSize: "1.05rem", marginBottom: "6px" }}>{selectedFile ? selectedFile.name : "Drop a certificate here"}</h3>
+                <p style={{ color: "rgba(176,196,222,0.58)", lineHeight: 1.6, marginBottom: 0 }}>
+                  PDF, JPG, or PNG. The backend will store the scan, gate payment if required, and queue the verification job.
+                </p>
+              </div>
+
+              <div className="flex flex-wrap items-center justify-between gap-3 mt-5">
+                <div style={{ color: "rgba(176,196,222,0.58)", fontSize: "12px" }}>
+                  {selectedFile ? `Selected: ${selectedFile.name}` : "No file selected yet."}
+                </div>
+                <button type="submit" disabled={submitting || !selectedFile} className="inline-flex items-center gap-2 rounded-xl px-5 py-3 transition-opacity disabled:opacity-60" style={{ background: "linear-gradient(135deg, #0F6E56, #12A37B)", color: "white", fontWeight: 600 }}>
+                  {submitting ? <Loader2 size={16} className="animate-spin" /> : <Upload size={16} />}
+                  {submitting ? "Submitting…" : "Start verification"}
+                </button>
+              </div>
+            </form>
+
+            <AnimatePresence mode="wait">
+              {uploadResult && (
+                <motion.div key="result" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="rounded-3xl p-6 md:p-7" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" }}>
+                  <div className="flex flex-wrap items-start justify-between gap-4 mb-5">
+                    <div>
+                      <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "rgba(176,196,222,0.38)", letterSpacing: "0.08em" }}>LATEST SUBMISSION</div>
+                      <h2 style={{ color: "#F0F6FF", fontSize: "1.1rem", marginTop: "4px" }}>{uploadResult.scan.fileName}</h2>
+                      <p style={{ color: "rgba(176,196,222,0.58)", marginBottom: 0 }}>Scan code {uploadResult.scan.scanCode}</p>
+                    </div>
+                    <div className="rounded-2xl p-4 text-right" style={{ background: uploadResult.paymentRequired ? "rgba(245,158,11,0.08)" : "rgba(18,163,123,0.08)", border: `1px solid ${uploadResult.paymentRequired ? "rgba(245,158,11,0.18)" : "rgba(18,163,123,0.18)"}` }}>
+                      <div style={{ fontSize: "10px", color: uploadResult.paymentRequired ? "#F59E0B" : "#12A37B", letterSpacing: "0.08em" }}>{uploadResult.paymentRequired ? "PAYMENT REQUIRED" : "QUEUED"}</div>
+                      <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", color: "#F0F6FF", marginTop: "4px" }}>{formatCurrency(uploadResult.pricing.price, uploadResult.pricing.currency)}</div>
+                    </div>
+                  </div>
+
+                  <div className="grid md:grid-cols-[180px_1fr] gap-6 items-center">
+                    <ScoreRing score={scoreForScan(uploadResult.scan)} size={160} animate />
+                    <div className="grid sm:grid-cols-2 gap-3">
+                      {[
+                        ["Scan code", uploadResult.scan.scanCode],
+                        ["Status", scanLabel(uploadResult.scan.status)],
+                        ["Verification", scanLabel(uploadResult.scan.verificationStatus)],
+                        ["Payment", scanLabel(uploadResult.scan.paymentStatus)],
+                      ].map(([label, value]) => (
+                        <div key={label} className="rounded-2xl p-4" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)" }}>
+                          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "rgba(176,196,222,0.35)", letterSpacing: "0.08em", marginBottom: "4px" }}>{String(label).toUpperCase()}</div>
+                          <div style={{ color: "#F0F6FF", fontSize: "13px", lineHeight: 1.5 }}>{value}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap gap-3 mt-6">
+                    <Link to={`/results/${uploadResult.scan.id}`} className="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 no-underline" style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)", color: "#F0F6FF" }}>
+                      <FileText size={15} />
+                      Open report
+                    </Link>
+                    {uploadResult.paymentRequired && uploadResult.transaction && (
+                      <button type="button" onClick={handleCheckPayment} className="inline-flex items-center gap-2 rounded-xl px-4 py-2.5" style={{ background: "rgba(18,163,123,0.12)", border: "1px solid rgba(18,163,123,0.2)", color: "#12A37B" }}>
+                        <CreditCard size={15} />
+                        Check payment
+                      </button>
+                    )}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {workspaceError && (
+              <div className="rounded-2xl p-4" style={{ background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.16)" }}>
+                <p className="m-0" style={{ color: "rgba(255,255,255,0.85)" }}>{workspaceError}</p>
+              </div>
+            )}
+
+            {checkoutResult && (
+              <div className="rounded-2xl p-4" style={{ background: "rgba(18,163,123,0.08)", border: "1px solid rgba(18,163,123,0.18)" }}>
+                <p className="m-0" style={{ color: "#F0F6FF" }}>Payment checkout opened for transaction {checkoutResult.transaction.reference}.</p>
+              </div>
+            )}
+          </motion.div>
+
+          <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.08 }} className="space-y-6">
+            <div className="rounded-3xl p-6" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" }}>
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "rgba(176,196,222,0.38)", letterSpacing: "0.08em" }}>WORKSPACE</div>
+                  <div style={{ color: "#F0F6FF", marginTop: "4px" }}>{user?.name}</div>
+                </div>
+                <Wallet size={16} color="#12A37B" />
+              </div>
+              <div className="space-y-3 text-sm" style={{ color: "rgba(176,196,222,0.72)" }}>
+                <div className="flex items-center justify-between"><span>Plan</span><span style={{ color: "#F0F6FF" }}>{user?.plan ?? "FREE"}</span></div>
+                <div className="flex items-center justify-between"><span>Monthly reset</span><span style={{ color: "#F0F6FF" }}>{usage?.resetAt ? new Date(usage.resetAt).toLocaleDateString() : "—"}</span></div>
+                <div className="flex items-center justify-between"><span>Remaining scans</span><span style={{ color: "#F0F6FF" }}>{usage ? usage.monthlyRemaining : "—"}</span></div>
+                <div className="flex items-center justify-between"><span>Wallet</span><span style={{ color: "#F0F6FF" }}>{showWallet ? (wallet ? formatCurrency(wallet.balance, wallet.currency) : "—") : "Not available"}</span></div>
+                <div className="flex items-center justify-between"><span>API access</span><span style={{ color: "#12A37B" }}>{status === "authenticated" ? "ACTIVE" : "PENDING"}</span></div>
+              </div>
+            </div>
+
+            <div className="rounded-3xl p-6" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" }}>
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "rgba(176,196,222,0.38)", letterSpacing: "0.08em" }}>RECENT SCANS</div>
+                  <div style={{ color: "#F0F6FF", marginTop: "4px" }}>Latest backend results</div>
+                </div>
+                {loadingWorkspace && <Loader2 size={16} className="animate-spin" color="#12A37B" />}
+              </div>
+
+              <div className="space-y-3">
+                {recentScans.length === 0 ? (
+                  <div className="rounded-2xl p-4 text-sm" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)", color: "rgba(176,196,222,0.6)" }}>
+                    Your scan history will appear here after the first upload.
+                  </div>
+                ) : (
+                  recentScans.map((scan) => {
+                    const tone = scan.verificationStatus === "VERIFIED" ? "#12A37B" : scan.verificationStatus === "FLAGGED" || scan.verificationStatus === "FAILED" ? "#EF4444" : "#F59E0B";
+                    return (
+                      <Link key={scan.id} to={`/results/${scan.id}`} className="block no-underline rounded-2xl p-4 transition-all hover:translate-y-[-1px]" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}>
+                        <div className="flex items-center justify-between gap-3">
+                          <div>
+                            <div style={{ color: "#F0F6FF", fontSize: "13px", marginBottom: "3px" }}>{scan.fileName}</div>
+                            <div style={{ color: "rgba(176,196,222,0.52)", fontSize: "11px" }}>{scan.scanCode}</div>
+                          </div>
+                          <div className="text-right">
+                            <div style={{ color: tone, fontSize: "12px", fontWeight: 600 }}>{scanLabel(scan.verificationStatus)}</div>
+                            <div style={{ color: "rgba(176,196,222,0.45)", fontSize: "10px" }}>{new Date(scan.createdAt).toLocaleDateString()}</div>
+                          </div>
+                        </div>
+                      </Link>
+                    );
+                  })
+                )}
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      </div>
+    </div>
+  );
+}

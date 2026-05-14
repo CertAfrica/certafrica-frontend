@@ -3,6 +3,9 @@ import { Root } from "./Root";
 import { LandingPage } from "./pages/LandingPage";
 import { VerifyPage } from "./pages/VerifyPage";
 import { DashboardPage } from "./pages/DashboardPage";
+import { FreeDashboardPage } from "./pages/free/DashboardPage";
+import { StarterDashboardPage } from "./pages/starter/DashboardPage";
+import { ProDashboardPage } from "./pages/pro/DashboardPage";
 import { ResultDetailPage } from "./pages/ResultDetailPage";
 import { PricingPage } from "./pages/PricingPage";
 import { BillingSettingsPage } from "./pages/BillingSettingsPage";
@@ -21,6 +24,9 @@ export const router = createBrowserRouter([
       { path: "pricing", Component: PricingPage },
       { path: "verify", Component: VerifyPage },
       { path: "dashboard", Component: DashboardPage },
+      { path: "free/dashboard", Component: FreeDashboardPage },
+      { path: "starter/dashboard", Component: StarterDashboardPage },
+      { path: "pro/dashboard", Component: ProDashboardPage },
       { path: "billing", Component: BillingSettingsPage },
       { path: "wallet", Component: WalletPage },
       { path: "team", Component: TeamPage },

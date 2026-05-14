@@ -2,6 +2,7 @@ import { FormEvent, useState } from "react";
 import { toast } from "sonner";
 import { Users } from "lucide-react";
 import { api } from "../lib/api";
+import { PlanGate } from "../components/PlanGate";
 
 export function TeamPage() {
   const [email, setEmail] = useState("");
@@ -24,6 +25,11 @@ export function TeamPage() {
   };
 
   return (
+    <PlanGate
+      allow={['PRO']}
+      title="Team tools are Pro only"
+      description="Invite members, assign roles, and review org-wide scans from the Pro plan."
+    >
     <div className="min-h-screen pt-16 px-6 md:px-10 py-12">
       <div className="max-w-4xl mx-auto space-y-6">
         <div>
@@ -60,5 +66,6 @@ export function TeamPage() {
         </div>
       </div>
     </div>
+    </PlanGate>
   );
 }

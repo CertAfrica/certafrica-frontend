@@ -1,20 +1,15 @@
 import { Link, useLocation } from "react-router";
-import { Shield, Upload, LogOut, CircleUserRound } from "lucide-react";
+import { Shield, Upload, CircleUserRound } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 
 export function Navbar() {
   const location = useLocation();
   const { user, isAuthenticated, logout } = useAuth();
 
-  const links = [
-    { to: "/", label: "Home" },
+  const publicLinks = [
     { to: "/pricing", label: "Pricing" },
+    { to: "/onboarding", label: "Onboarding" },
     { to: "/verify", label: "Verify" },
-    { to: "/dashboard", label: "Dashboard" },
-    { to: "/wallet", label: "Wallet" },
-    { to: "/billing", label: "Billing" },
-    { to: "/team", label: "Team" },
-    { to: "/bulk", label: "Bulk" },
   ];
 
   return (
@@ -65,49 +60,30 @@ export function Navbar() {
         </div>
       </Link>
 
-      {/* Nav links */}
-      <div className="hidden md:flex items-center gap-1">
-        {links.map((link) => {
-          const isActive = location.pathname === link.to;
-          return (
-            <Link
-              key={link.to}
-              to={link.to}
-              className="px-4 py-1.5 rounded-lg transition-all no-underline"
-              style={{
-                fontFamily: "'IBM Plex Sans', sans-serif",
-                fontSize: "13px",
-                fontWeight: 500,
-                color: isActive ? "#12A37B" : "rgba(176, 196, 222, 0.8)",
-                background: isActive ? "rgba(15, 110, 86, 0.12)" : "transparent",
-                border: isActive ? "1px solid rgba(15, 110, 86, 0.25)" : "1px solid transparent",
-              }}
-            >
-              {link.label}
-            </Link>
-          );
-        })}
-      </div>
-
-      <div className="hidden md:flex items-center gap-2">
-        {isAuthenticated && user ? (
-          <div className="flex items-center gap-2 rounded-xl px-3 py-2" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}>
-            <CircleUserRound size={14} color="#12A37B" />
-            <div>
-              <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "12px", color: "#F0F6FF", lineHeight: 1 }}>{user.name}</div>
-              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "rgba(176,196,222,0.4)" }}>{user.plan}</div>
-            </div>
-            <button
-              type="button"
-              onClick={logout}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all hover:opacity-85"
-              style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)", color: "rgba(176,196,222,0.8)", fontSize: "12px" }}
-            >
-              <LogOut size={12} />
-              Logout
-            </button>
+      {!isAuthenticated ? (
+        <div className="hidden md:flex items-center gap-2">
+          <div className="hidden lg:flex items-center gap-1">
+            {publicLinks.map((link) => {
+              const isActive = location.pathname === link.to;
+              return (
+                <Link
+                  key={link.to}
+                  to={link.to}
+                  className="px-4 py-1.5 rounded-lg transition-all no-underline"
+                  style={{
+                    fontFamily: "'IBM Plex Sans', sans-serif",
+                    fontSize: "13px",
+                    fontWeight: 500,
+                    color: isActive ? "#12A37B" : "rgba(176, 196, 222, 0.8)",
+                    background: isActive ? "rgba(15, 110, 86, 0.12)" : "transparent",
+                    border: isActive ? "1px solid rgba(15, 110, 86, 0.25)" : "1px solid transparent",
+                  }}
+                >
+                  {link.label}
+                </Link>
+              );
+            })}
           </div>
-        ) : (
           <Link
             to="/verify"
             className="hidden md:flex items-center gap-1.5 px-4 py-2 rounded-lg no-underline transition-all hover:opacity-90"
@@ -123,8 +99,26 @@ export function Navbar() {
             <Upload size={12} />
             Start Verification
           </Link>
-        )}
-      </div>
+        </div>
+      ) : (
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 rounded-xl px-3 py-2" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}>
+            <CircleUserRound size={14} color="#12A37B" />
+            <div>
+              <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "12px", color: "#F0F6FF", lineHeight: 1 }}>{user?.name}</div>
+              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "rgba(176,196,222,0.4)" }}>{user?.plan}</div>
+            </div>
+            <button
+              type="button"
+              onClick={logout}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all hover:opacity-85"
+              style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)", color: "rgba(176,196,222,0.8)", fontSize: "12px" }}
+            >
+              Logout
+            </button>
+          </div>
+        </div>
+      )}
     </nav>
   );
 }

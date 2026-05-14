@@ -4,6 +4,7 @@ import { CreditCard, Loader2 } from "lucide-react";
 import { api } from "../lib/api";
 import type { BillingHistoryItem } from "../lib/types";
 import { toast } from "sonner";
+import { PlanGate } from "../components/PlanGate";
 
 function formatCurrency(value: string | number, currency = "NGN") {
   const amount = typeof value === "string" ? Number.parseFloat(value) : value;
@@ -31,6 +32,11 @@ export function BillingSettingsPage() {
   }, []);
 
   return (
+    <PlanGate
+      allow={['STARTER', 'PRO']}
+      title="Billing settings are for paid plans"
+      description="Subscription billing history and renewal details are only shown for Starter and Pro users."
+    >
     <div className="min-h-screen pt-16 px-6 md:px-10 py-12">
       <div className="max-w-5xl mx-auto space-y-6">
         <div className="flex items-center justify-between">
@@ -71,5 +77,6 @@ export function BillingSettingsPage() {
         </div>
       </div>
     </div>
+    </PlanGate>
   );
 }

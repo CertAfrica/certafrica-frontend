@@ -1,8 +1,9 @@
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useMemo, useState, type ChangeEvent } from "react";
 import { toast } from "sonner";
 import { Upload, Loader2 } from "lucide-react";
 import { api, extractCheckoutUrl } from "../lib/api";
 import type { BulkPricing } from "../lib/types";
+import { PlanGate } from "../components/PlanGate";
 
 function formatCurrency(value: number, currency = "NGN") {
   return new Intl.NumberFormat("en-NG", { style: "currency", currency, maximumFractionDigits: 0 }).format(value);
@@ -15,7 +16,7 @@ export function BulkUploadPage() {
 
   const count = files.length;
 
-  const handleFiles = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFiles = (event: ChangeEvent<HTMLInputElement>) => {
     const list = Array.from(event.target.files ?? []);
     setFiles(list);
   };
@@ -64,6 +65,11 @@ export function BulkUploadPage() {
   }, [pricing, count]);
 
   return (
+    <PlanGate
+      allow={['PRO']}
+      title="Bulk verification is a Pro feature"
+      description="Bulk scan pricing, queue priority, and batch verification are only available on the Pro plan."
+    >
     <div className="min-h-screen pt-16 px-6 md:px-10 py-12">
       <div className="max-w-4xl mx-auto space-y-6">
         <div>
@@ -86,5 +92,6 @@ export function BulkUploadPage() {
         </form>
       </div>
     </div>
+    </PlanGate>
   );
 }

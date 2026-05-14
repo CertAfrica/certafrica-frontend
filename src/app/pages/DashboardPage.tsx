@@ -65,20 +65,21 @@ export function DashboardPage() {
 
   const loadDashboard = async () => {
     if (!isAuthenticated) return;
+    const canAccessWallet = user?.plan !== "FREE";
 
     setLoading(true);
     try {
-      const [walletResponse, scansResponse, usageResponse, billingResponse] = await Promise.all([
-        api.getWallet().catch(() => null),
+      const [walletResult, scansResult, usageResult, billingResult] = await Promise.allSettled([
+        canAccessWallet ? api.getWallet() : Promise.resolve(null),
         api.getScans(1, 25),
-        api.getScanUsage().catch(() => null),
-        api.getBillingHistory().catch(() => ({ items: [] })),
+        api.getScanUsage(),
+        api.getBillingHistory(),
       ]);
 
-      setWallet(walletResponse);
-      setScans(scansResponse.items);
-      setUsage(usageResponse);
-      setBilling(billingResponse.items ?? []);
+      setWallet(walletResult.status === "fulfilled" ? walletResult.value : null);
+      setScans(scansResult.status === "fulfilled" ? scansResult.value.items : []);
+      setUsage(usageResult.status === "fulfilled" ? usageResult.value : null);
+      setBilling(billingResult.status === "fulfilled" ? billingResult.value.items ?? [] : []);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to load dashboard.");
     } finally {
@@ -468,7 +469,6 @@ function StarterDashboard({
   topupBusy: boolean;
   handleTopup: () => Promise<void>;
 }) {
-  const starterLimit = 10;
   const shownScans = scans.slice(0, 5);
 
   return (
@@ -483,13 +483,13 @@ function StarterDashboard({
             Built for quick checks and a clean upgrade path.
           </h2>
           <p style={{ color: "rgba(176,196,222,0.68)", maxWidth: "60ch", lineHeight: 1.7 }}>
-            Starter users get 10 monthly scans plus discounted pricing when you exceed your quota. Wallet balance can cover extra scans before card checkout.
+            Starter users get monthly scans from the usage endpoint plus discounted pricing when you exceed your quota. Wallet balance can cover extra scans before card checkout.
           </p>
 
           <div className="grid sm:grid-cols-3 gap-3 mt-6">
             {[
               { label: "Recent scans", value: String(scans.length) },
-              { label: "Monthly quota", value: `${starterLimit} scans` },
+              { label: "Monthly quota", value: usage ? `${usage.monthlyLimit} scans` : "—" },
               { label: "Remaining", value: usage ? `${usage.monthlyRemaining}` : "—" },
             ].map((item) => (
               <div key={item.label} className="rounded-2xl p-4" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)" }}>
@@ -640,7 +640,7 @@ function FreeDashboard({
             <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "#12A37B", letterSpacing: "0.08em" }}>FREE PLAN</span>
           </div>
           <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: "clamp(1.6rem, 3vw, 2.4rem)", color: "#F0F6FF", lineHeight: 1.15, marginBottom: "10px" }}>
-            Two free verifications every month.
+            {usage ? `${usage.monthlyLimit} free verifications every month.` : "Free verifications every month."}
           </h2>
           <p style={{ color: "rgba(176,196,222,0.68)", maxWidth: "60ch", lineHeight: 1.7 }}>
             After your free scans are used, each verification costs ₦500. Monthly scans reset automatically and unused scans do not roll over.
@@ -648,6 +648,8 @@ function FreeDashboard({
 
           <div className="grid sm:grid-cols-3 gap-3 mt-6">
             {[
+              { label: "Used", value: usage ? `${usage.monthlyUsed}` : "—" },
+              { label: "Monthly quota", value: usage ? `${usage.monthlyLimit}` : "—" },
               { label: "Remaining", value: usage ? `${usage.monthlyRemaining}` : "—" },
               { label: "Monthly reset", value: usage?.resetAt ? new Date(usage.resetAt).toLocaleDateString() : "—" },
               { label: "Pay per scan", value: "₦500" },

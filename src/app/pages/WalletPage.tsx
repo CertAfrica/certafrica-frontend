@@ -3,6 +3,8 @@ import { CreditCard, Loader2, Wallet as WalletIcon } from "lucide-react";
 import { toast } from "sonner";
 import { api, extractCheckoutUrl } from "../lib/api";
 import type { Wallet as WalletType, WalletTransaction } from "../lib/types";
+import { PlanGate } from "../components/PlanGate";
+import { useAuth } from "../context/AuthContext";
 
 function formatCurrency(value: string | number | undefined, currency = "NGN") {
   const amount = typeof value === "string" ? Number.parseFloat(value) : value ?? 0;
@@ -10,12 +12,14 @@ function formatCurrency(value: string | number | undefined, currency = "NGN") {
 }
 
 export function WalletPage() {
+  const { user } = useAuth();
   const [wallet, setWallet] = useState<WalletType | null>(null);
   const [loading, setLoading] = useState(false);
   const [topupAmount, setTopupAmount] = useState("2500");
   const [topupBusy, setTopupBusy] = useState(false);
 
   const loadWallet = async () => {
+    if (user?.plan === "FREE") return;
     setLoading(true);
     try {
       const result = await api.getWallet();
@@ -29,7 +33,7 @@ export function WalletPage() {
 
   useEffect(() => {
     void loadWallet();
-  }, []);
+  }, [user?.plan]);
 
   const handleTopup = async () => {
     const amount = Number.parseFloat(topupAmount);
@@ -57,6 +61,11 @@ export function WalletPage() {
   const transactions: WalletTransaction[] = wallet?.transactions ?? [];
 
   return (
+    <PlanGate
+      allow={['STARTER', 'PRO']}
+      title="Wallet is not available on Free"
+      description="Starter and Pro users can fund wallets, view transaction history, and auto-deduct scan fees. Upgrade to unlock wallet tools."
+    >
     <div className="min-h-screen pt-16 px-6 md:px-10 py-12">
       <div className="max-w-5xl mx-auto space-y-6">
         <div className="flex items-center justify-between">
@@ -111,5 +120,6 @@ export function WalletPage() {
         </div>
       </div>
     </div>
+    </PlanGate>
   );
 }

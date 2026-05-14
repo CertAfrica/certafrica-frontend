@@ -59,25 +59,26 @@ export function VerifyPage() {
 
   const loadWorkspace = useCallback(async () => {
     if (!isAuthenticated) return;
+    const canAccessWallet = user?.plan !== "FREE";
     setLoadingWorkspace(true);
     setWorkspaceError(null);
 
     try {
-      const [walletResponse, scansResponse, usageResponse] = await Promise.all([
-        api.getWallet().catch(() => null),
+      const [walletResponse, scansResponse, usageResponse] = await Promise.allSettled([
+        canAccessWallet ? api.getWallet() : Promise.resolve(null),
         api.getScans(1, 5),
-        api.getScanUsage().catch(() => null),
+        api.getScanUsage(),
       ]);
 
-      setWallet(walletResponse);
-      setRecentScans(scansResponse.items);
-      setUsage(usageResponse);
+      setWallet(walletResponse.status === "fulfilled" ? walletResponse.value : null);
+      setRecentScans(scansResponse.status === "fulfilled" ? scansResponse.value.items : []);
+      setUsage(usageResponse.status === "fulfilled" ? usageResponse.value : null);
     } catch (error) {
       setWorkspaceError(error instanceof Error ? error.message : "Unable to load the verification workspace.");
     } finally {
       setLoadingWorkspace(false);
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, user?.plan]);
 
   useEffect(() => {
     if (isAuthenticated) {

@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { ScoreRing } from "../components/ScoreRing";
+import { PaymentModal } from "../components/PaymentModal";
 import { useAuth } from "../context/AuthContext";
 import { api, extractCheckoutUrl, type ApiError } from "../lib/api";
 import type { PaymentCheckoutResponse, Scan, ScanSubmissionResponse, ScanUsageSummary, Wallet as WalletType } from "../lib/types";
@@ -56,6 +57,7 @@ export function VerifyPage() {
   const [recentScans, setRecentScans] = useState<Scan[]>([]);
   const [loadingWorkspace, setLoadingWorkspace] = useState(false);
   const [workspaceError, setWorkspaceError] = useState<string | null>(null);
+  const [paymentModalOpen, setPaymentModalOpen] = useState(false);
 
   const loadWorkspace = useCallback(async () => {
     if (!isAuthenticated) return;
@@ -115,6 +117,18 @@ export function VerifyPage() {
       return;
     }
 
+    // Payment gate: Check if user can verify
+    if (plan === "FREE" && usage?.monthlyRemaining === 0) {
+      toast.error("Free scans exhausted. You must pay ₦500 per scan to continue.");
+      return;
+    }
+
+    const walletBalance = wallet ? Number(wallet.balance) : 0;
+    if (plan === "STARTER" && usage?.monthlyRemaining === 0 && walletBalance <= 0) {
+      toast.error("Monthly free scans exhausted and wallet is empty. Top up your wallet to continue.");
+      return;
+    }
+
     setSubmitting(true);
     try {
       const submission = await api.submitScan(selectedFile);
@@ -125,10 +139,7 @@ export function VerifyPage() {
       if (submission.paymentRequired && submission.transaction) {
         const payment = await api.initializePayment({ type: "scan", scanId: submission.scan.id });
         setCheckoutResult(payment);
-        const checkoutUrl = extractCheckoutUrl(payment.checkout);
-        if (checkoutUrl) {
-          window.open(checkoutUrl, "_blank", "noopener,noreferrer");
-        }
+        setPaymentModalOpen(true);
       }
 
       await loadWorkspace();
@@ -160,6 +171,16 @@ export function VerifyPage() {
   const queuedScans = useMemo(() => recentScans.filter((scan) => scan.status === "QUEUED" || scan.status === "PROCESSING").length, [recentScans]);
   const plan = user?.plan ?? "FREE";
   const showWallet = plan !== "FREE";
+
+  // Payment gate status
+  const walletBalance = wallet ? Number(wallet.balance) : 0;
+  const canVerify = !(plan === "FREE" && usage?.monthlyRemaining === 0) && !(plan === "STARTER" && usage?.monthlyRemaining === 0 && walletBalance <= 0);
+  const verifyBlockReason =
+    plan === "FREE" && usage?.monthlyRemaining === 0
+      ? "Free scans exhausted—pay ₦500 per scan"
+      : plan === "STARTER" && usage?.monthlyRemaining === 0 && walletBalance <= 0
+        ? "Free scans exhausted and wallet empty—top up to continue"
+        : null;
 
   if (status === "loading") {
     return (
@@ -294,7 +315,53 @@ export function VerifyPage() {
 
             {plan === "FREE" && usage?.monthlyRemaining === 0 && (
               <div className="rounded-2xl p-4 text-sm" style={{ background: "rgba(245,158,11,0.12)", border: "1px solid rgba(245,158,11,0.22)", color: "rgba(255,255,255,0.86)" }}>
-                Free scans are exhausted. Pay ₦500 to verify the next certificate.
+                <div className="flex items-center justify-between gap-2">
+                  <span>Free scans are exhausted. Pay ₦500 to verify the next certificate.</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const amount = 500;
+                      toast.promise(
+                        api.topupWallet(amount).then((checkout) => {
+                          const url = extractCheckoutUrl(checkout.checkout);
+                          if (url) window.open(url, "_blank", "noopener,noreferrer");
+                          return "Checkout opened";
+                        }),
+                        { success: "Wallet top-up checkout opened", error: "Top-up failed" }
+                      );
+                    }}
+                    className="px-3 py-1.5 rounded-lg text-xs font-500 whitespace-nowrap"
+                    style={{ background: "rgba(255,255,255,0.12)", border: "none", color: "#F0F6FF" }}
+                  >
+                    <CreditCard size={12} className="inline mr-1" /> Pay now
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {plan === "STARTER" && usage?.monthlyRemaining === 0 && walletBalance <= 0 && (
+              <div className="rounded-2xl p-4 text-sm" style={{ background: "rgba(59,139,212,0.12)", border: "1px solid rgba(59,139,212,0.22)", color: "rgba(255,255,255,0.86)" }}>
+                <div className="flex items-center justify-between gap-2">
+                  <span>Monthly free scans exhausted. Top up wallet to continue.</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const amount = 5000;
+                      toast.promise(
+                        api.topupWallet(amount).then((checkout) => {
+                          const url = extractCheckoutUrl(checkout.checkout);
+                          if (url) window.open(url, "_blank", "noopener,noreferrer");
+                          return "Checkout opened";
+                        }),
+                        { success: "Wallet top-up checkout opened", error: "Top-up failed" }
+                      );
+                    }}
+                    className="px-3 py-1.5 rounded-lg text-xs font-500 whitespace-nowrap"
+                    style={{ background: "rgba(59,139,212,0.16)", border: "1px solid rgba(59,139,212,0.3)", color: "#3B8BD4" }}
+                  >
+                    <Wallet size={12} className="inline mr-1" /> Top up ₦5,000
+                  </button>
+                </div>
               </div>
             )}
 
@@ -335,11 +402,18 @@ export function VerifyPage() {
                 <div style={{ color: "rgba(176,196,222,0.58)", fontSize: "12px" }}>
                   {selectedFile ? `Selected: ${selectedFile.name}` : "No file selected yet."}
                 </div>
-                <button type="submit" disabled={submitting || !selectedFile} className="inline-flex items-center gap-2 rounded-xl px-5 py-3 transition-opacity disabled:opacity-60" style={{ background: "linear-gradient(135deg, #0F6E56, #12A37B)", color: "white", fontWeight: 600 }}>
+                <button type="submit" disabled={submitting || !selectedFile || !canVerify} className="inline-flex items-center gap-2 rounded-xl px-5 py-3 transition-opacity disabled:opacity-60" style={{ background: "linear-gradient(135deg, #0F6E56, #12A37B)", color: "white", fontWeight: 600 }}>
                   {submitting ? <Loader2 size={16} className="animate-spin" /> : <Upload size={16} />}
                   {submitting ? "Submitting…" : "Start verification"}
                 </button>
               </div>
+
+              {verifyBlockReason && (
+                <div className="flex items-center gap-2 rounded-xl px-4 py-2 mt-3" style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.22)" }}>
+                  <AlertCircle size={14} color="#EF4444" />
+                  <span style={{ fontSize: "12px", color: "rgba(255,255,255,0.82)" }}>{verifyBlockReason}</span>
+                </div>
+              )}
             </form>
 
             <AnimatePresence mode="wait">
@@ -459,6 +533,30 @@ export function VerifyPage() {
           </motion.div>
         </div>
       </div>
+
+      {/* Payment Modal */}
+      <PaymentModal
+        isOpen={paymentModalOpen}
+        checkoutUrl={checkoutResult ? extractCheckoutUrl(checkoutResult.checkout) : null}
+        transactionRef={uploadResult?.transaction?.reference ?? null}
+        amount={uploadResult?.transaction ? Number(uploadResult.transaction.amount) : undefined}
+        type="scan"
+        onClose={() => setPaymentModalOpen(false)}
+        onVerify={async (ref) => {
+          try {
+            const result = await api.verifyPayment(ref);
+            return result.processed === true;
+          } catch {
+            return false;
+          }
+        }}
+        onSuccess={() => {
+          setSelectedFile(null);
+          setUploadResult(null);
+          setCheckoutResult(null);
+          void loadWorkspace();
+        }}
+      />
     </div>
   );
 }

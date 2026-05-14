@@ -126,11 +126,32 @@ export const api = {
     apiRequest<{ organization: Record<string, unknown>; member: Record<string, unknown> }>("/api/team/invite", { method: "POST", body: payload }),
 };
 
-export function extractCheckoutUrl(checkout: Record<string, unknown>) {
-  const candidates = ["authorization_url", "authorizationUrl", "checkout_url", "checkoutUrl", "url", "paymentUrl", "payment_url"];
-  for (const key of candidates) {
-    const value = checkout[key];
-    if (typeof value === "string" && value.length > 0) return value;
+export function extractCheckoutUrl(checkout: Record<string, unknown> | null | undefined) {
+  if (!checkout || typeof checkout !== "object") return null;
+
+  const candidates = [
+    "authorization_url",
+    "authorizationUrl",
+    "checkout_url",
+    "checkoutUrl",
+    "url",
+    "paymentUrl",
+    "payment_url",
+  ];
+
+  // Search the top level, then a nested `data` object (Squad nests it there).
+  const scopes: Record<string, unknown>[] = [checkout];
+  const data = checkout["data"];
+  if (data && typeof data === "object") {
+    scopes.push(data as Record<string, unknown>);
   }
+
+  for (const scope of scopes) {
+    for (const key of candidates) {
+      const value = scope[key];
+      if (typeof value === "string" && value.length > 0) return value;
+    }
+  }
+
   return null;
 }

@@ -111,14 +111,18 @@ export function PricingPage() {
                   <Link to="/verify" className="inline-flex items-center gap-2 rounded-xl px-4 py-3 no-underline" style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)", color: "#F0F6FF" }}>
                     Continue on Free
                   </Link>
-                ) : isAuthenticated ? isCurrentPlan(plan.key) ? (
+                ) : !isAuthenticated ? (
+                  <Link to="/auth" className="inline-flex items-center gap-2 rounded-xl px-4 py-3 no-underline" style={{ background: "linear-gradient(135deg, #0F6E56, #12A37B)", color: "white", fontWeight: 600 }}>
+                    Sign in to upgrade
+                  </Link>
+                ) : isCurrentPlan(plan.key) ? (
                   <Link to="/account" className="inline-flex items-center gap-2 rounded-xl px-4 py-3 no-underline" style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)", color: "#F0F6FF" }}>
                     Current plan
                   </Link>
                 ) : (
                   <button
                     type="button"
-                    onClick={() => handleUpgrade(plan.key)}
+                    onClick={() => handleUpgrade(plan.key as "STARTER" | "PRO")}
                     disabled={busyPlan === plan.key}
                     className="inline-flex items-center gap-2 rounded-xl px-4 py-3 transition-opacity disabled:opacity-60"
                     style={{ background: "linear-gradient(135deg, #0F6E56, #12A37B)", color: "white", fontWeight: 600 }}
@@ -126,10 +130,6 @@ export function PricingPage() {
                     <CreditCard size={16} />
                     {busyPlan === plan.key ? "Starting checkout…" : `Upgrade to ${plan.title}`}
                   </button>
-                ) : (
-                  <Link to="/auth" className="inline-flex items-center gap-2 rounded-xl px-4 py-3 no-underline" style={{ background: "linear-gradient(135deg, #0F6E56, #12A37B)", color: "white", fontWeight: 600 }}>
-                    Sign in to upgrade
-                  </Link>
                 )}
               </div>
             </div>

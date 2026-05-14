@@ -101,33 +101,37 @@ export function VerifyPage() {
     let cancelled = false;
 
     const verifyPaymentNow = async () => {
+      if (cancelled) return;
       setVerifyingTransaction(true);
       try {
         const result = await api.verifyPayment(transactionRef);
         if (cancelled) return;
 
         if (result.processed === true || result.alreadyProcessed === true) {
-          toast.success("Payment verified and scan queued.");
           if (paymentPollRef.current !== null) {
             window.clearInterval(paymentPollRef.current);
             paymentPollRef.current = null;
           }
           setVerifyingTransaction(false);
+          toast.success("Payment verified and scan queued.");
           setPaymentModalOpen(false);
           setCheckoutResult(null);
+          setSelectedFile(null);
+          setUploadResult(null);
           await loadWorkspace();
         }
-      } catch {
+      } catch (error) {
         // Keep polling silently; the payment gateway may still be updating.
-      } finally {
         if (!cancelled) {
-          setVerifyingTransaction(true);
+          setVerifyingTransaction(false);
         }
       }
     };
 
+    // Initial verification immediately
     void verifyPaymentNow();
 
+    // Then set up polling every 10 seconds
     paymentPollRef.current = window.setInterval(() => {
       void verifyPaymentNow();
     }, 10000) as unknown as number;
@@ -138,6 +142,7 @@ export function VerifyPage() {
         window.clearInterval(paymentPollRef.current);
         paymentPollRef.current = null;
       }
+      setVerifyingTransaction(false);
     };
   }, [checkoutResult?.transaction?.reference, paymentModalOpen, loadWorkspace]);
 

@@ -130,6 +130,14 @@ export function VerifyPage() {
     }
 
     setSubmitting(true);
+    const paymentPopup = window.open("about:blank", "certafrica-payment", "width=900,height=700");
+    if (paymentPopup) {
+      paymentPopup.document.write(
+        "<html><body style='font-family:sans-serif;background:#08111E;color:#F0F6FF;display:flex;align-items:center;justify-content:center;height:100vh;margin:0'>Opening Squad checkout…</body></html>"
+      );
+      paymentPopup.document.close();
+    }
+
     try {
       const submission = await api.submitScan(selectedFile);
       setUploadResult(submission);
@@ -139,11 +147,27 @@ export function VerifyPage() {
       if (submission.paymentRequired && submission.transaction) {
         const payment = await api.initializePayment({ type: "scan", scanId: submission.scan.id });
         setCheckoutResult(payment);
+        const checkoutUrl = extractCheckoutUrl(payment.checkout);
+        if (checkoutUrl) {
+          if (paymentPopup) {
+            paymentPopup.location.href = checkoutUrl;
+            paymentPopup.focus();
+          } else {
+            window.open(checkoutUrl, "_blank", "width=900,height=700");
+          }
+        } else if (paymentPopup) {
+          paymentPopup.close();
+        }
         setPaymentModalOpen(true);
+      } else if (paymentPopup) {
+        paymentPopup.close();
       }
 
       await loadWorkspace();
     } catch (error) {
+      if (paymentPopup) {
+        paymentPopup.close();
+      }
       const message = error instanceof Error ? error.message : "Unable to submit your certificate.";
       toast.error(message);
     } finally {
@@ -320,11 +344,28 @@ export function VerifyPage() {
                   <button
                     type="button"
                     onClick={() => {
+                      const paymentPopup = window.open("about:blank", "certafrica-topup-free", "width=900,height=700");
+                      if (paymentPopup) {
+                        paymentPopup.document.write(
+                          "<html><body style='font-family:sans-serif;background:#08111E;color:#F0F6FF;display:flex;align-items:center;justify-content:center;height:100vh;margin:0'>Opening Squad checkout…</body></html>"
+                        );
+                        paymentPopup.document.close();
+                      }
+
                       const amount = 500;
                       toast.promise(
                         api.topupWallet(amount).then((checkout) => {
                           const url = extractCheckoutUrl(checkout.checkout);
-                          if (url) window.open(url, "_blank", "noopener,noreferrer");
+                          if (url) {
+                            if (paymentPopup) {
+                              paymentPopup.location.href = url;
+                              paymentPopup.focus();
+                            } else {
+                              window.open(url, "_blank", "noopener,noreferrer,width=900,height=700");
+                            }
+                          } else if (paymentPopup) {
+                            paymentPopup.close();
+                          }
                           return "Checkout opened";
                         }),
                         { success: "Wallet top-up checkout opened", error: "Top-up failed" }
@@ -346,11 +387,28 @@ export function VerifyPage() {
                   <button
                     type="button"
                     onClick={() => {
+                      const paymentPopup = window.open("about:blank", "certafrica-topup-starter", "width=900,height=700");
+                      if (paymentPopup) {
+                        paymentPopup.document.write(
+                          "<html><body style='font-family:sans-serif;background:#08111E;color:#F0F6FF;display:flex;align-items:center;justify-content:center;height:100vh;margin:0'>Opening Squad checkout…</body></html>"
+                        );
+                        paymentPopup.document.close();
+                      }
+
                       const amount = 5000;
                       toast.promise(
                         api.topupWallet(amount).then((checkout) => {
                           const url = extractCheckoutUrl(checkout.checkout);
-                          if (url) window.open(url, "_blank", "noopener,noreferrer");
+                          if (url) {
+                            if (paymentPopup) {
+                              paymentPopup.location.href = url;
+                              paymentPopup.focus();
+                            } else {
+                              window.open(url, "_blank", "noopener,noreferrer,width=900,height=700");
+                            }
+                          } else if (paymentPopup) {
+                            paymentPopup.close();
+                          }
                           return "Checkout opened";
                         }),
                         { success: "Wallet top-up checkout opened", error: "Top-up failed" }

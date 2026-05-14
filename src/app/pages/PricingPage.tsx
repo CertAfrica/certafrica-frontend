@@ -34,15 +34,33 @@ export function PricingPage() {
   const [busyPlan, setBusyPlan] = useState<string | null>(null);
 
   const handleUpgrade = async (plan: "STARTER" | "PRO") => {
+    const paymentPopup = window.open("about:blank", "certafrica-plan-upgrade", "width=900,height=700");
+    if (paymentPopup) {
+      paymentPopup.document.write(
+        "<html><body style='font-family:sans-serif;background:#08111E;color:#F0F6FF;display:flex;align-items:center;justify-content:center;height:100vh;margin:0'>Opening Squad checkout…</body></html>"
+      );
+      paymentPopup.document.close();
+    }
+
     try {
       setBusyPlan(plan);
       const result = await api.upgradeSubscription(plan);
       const checkoutUrl = extractCheckoutUrl(result.checkout);
       toast.success("Checkout created. Complete payment to activate the plan.");
       if (checkoutUrl) {
-        window.open(checkoutUrl, "_blank", "noopener,noreferrer");
+        if (paymentPopup) {
+          paymentPopup.location.href = checkoutUrl;
+          paymentPopup.focus();
+        } else {
+          window.open(checkoutUrl, "_blank", "noopener,noreferrer,width=900,height=700");
+        }
+      } else if (paymentPopup) {
+        paymentPopup.close();
       }
     } catch (error) {
+      if (paymentPopup) {
+        paymentPopup.close();
+      }
       toast.error(error instanceof Error ? error.message : "Unable to start upgrade.");
     } finally {
       setBusyPlan(null);

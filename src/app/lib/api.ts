@@ -12,7 +12,7 @@ import type {
   Wallet,
 } from "./types";
 
-const API_BASE_URL = "http://localhost:4000";
+const API_BASE_URL = process.env.API_BASE_URL;
 
 export class ApiError extends Error {
   status: number;

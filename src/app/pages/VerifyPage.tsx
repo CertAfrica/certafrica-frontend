@@ -58,6 +58,8 @@ export function VerifyPage() {
   const [loadingWorkspace, setLoadingWorkspace] = useState(false);
   const [workspaceError, setWorkspaceError] = useState<string | null>(null);
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
+  const [paymentModalType, setPaymentModalType] = useState<"scan" | "wallet_topup" | "subscription">("scan");
+  const [pendingVerificationFile, setPendingVerificationFile] = useState<File | null>(null);
 
   const loadWorkspace = useCallback(async () => {
     if (!isAuthenticated) return;
@@ -117,15 +119,51 @@ export function VerifyPage() {
       return;
     }
 
-    // Payment gate: Check if user can verify
-    if (plan === "FREE" && usage?.monthlyRemaining === 0) {
-      toast.error("Free scans exhausted. You must pay ₦500 per scan to continue.");
-      return;
-    }
-
     const walletBalance = wallet ? Number(wallet.balance) : 0;
-    if (plan === "STARTER" && usage?.monthlyRemaining === 0 && walletBalance <= 0) {
-      toast.error("Monthly free scans exhausted and wallet is empty. Top up your wallet to continue.");
+    const requiresPrePayment =
+      (plan === "FREE" && usage?.monthlyRemaining === 0) ||
+      (plan === "STARTER" && usage?.monthlyRemaining === 0 && walletBalance <= 0);
+
+    if (requiresPrePayment) {
+      setSubmitting(true);
+      const paymentPopup = window.open("about:blank", "certafrica-prepay", "width=900,height=700");
+      if (paymentPopup) {
+        paymentPopup.document.write(
+          "<html><body style='font-family:sans-serif;background:#08111E;color:#F0F6FF;display:flex;align-items:center;justify-content:center;height:100vh;margin:0'>Opening Squad checkout…</body></html>"
+        );
+        paymentPopup.document.close();
+      }
+
+      try {
+        const amount = plan === "FREE" ? 500 : 400;
+        const payment = await api.initializePayment({ type: "wallet_topup", amount });
+        const checkoutUrl = extractCheckoutUrl(payment.checkout);
+
+        setCheckoutResult(payment);
+        setPaymentModalType("wallet_topup");
+        setPaymentModalOpen(true);
+        setPendingVerificationFile(selectedFile);
+
+        if (checkoutUrl) {
+          if (paymentPopup) {
+            paymentPopup.location.href = checkoutUrl;
+            paymentPopup.focus();
+          } else {
+            window.open(checkoutUrl, "_blank", "width=900,height=700");
+          }
+        } else if (paymentPopup) {
+          paymentPopup.close();
+        }
+
+        toast.message("Complete payment, then verify in the modal to submit your scan.");
+      } catch (error) {
+        if (paymentPopup) paymentPopup.close();
+        const message = error instanceof Error ? error.message : "Unable to initialize payment.";
+        toast.error(message);
+      } finally {
+        setSubmitting(false);
+      }
+
       return;
     }
 
@@ -147,6 +185,7 @@ export function VerifyPage() {
       if (submission.paymentRequired && submission.transaction) {
         const payment = await api.initializePayment({ type: "scan", scanId: submission.scan.id });
         setCheckoutResult(payment);
+        setPaymentModalType("scan");
         const checkoutUrl = extractCheckoutUrl(payment.checkout);
         if (checkoutUrl) {
           if (paymentPopup) {
@@ -198,7 +237,7 @@ export function VerifyPage() {
 
   // Payment gate status
   const walletBalance = wallet ? Number(wallet.balance) : 0;
-  const canVerify = !(plan === "FREE" && usage?.monthlyRemaining === 0) && !(plan === "STARTER" && usage?.monthlyRemaining === 0 && walletBalance <= 0);
+  const canVerify = true;
   const verifyBlockReason =
     plan === "FREE" && usage?.monthlyRemaining === 0
       ? "Free scans exhausted—pay ₦500 per scan"
@@ -423,7 +462,7 @@ export function VerifyPage() {
                 <div style={{ color: "rgba(176,196,222,0.58)", fontSize: "12px" }}>
                   {selectedFile ? `Selected: ${selectedFile.name}` : "No file selected yet."}
                 </div>
-                <button type="submit" disabled={submitting || !selectedFile || !canVerify} className="inline-flex items-center gap-2 rounded-xl px-5 py-3 transition-opacity disabled:opacity-60" style={{ background: "linear-gradient(135deg, #0F6E56, #12A37B)", color: "white", fontWeight: 600 }}>
+                <button type="submit" disabled={submitting || !selectedFile} className="inline-flex items-center gap-2 rounded-xl px-5 py-3 transition-opacity disabled:opacity-60" style={{ background: "linear-gradient(135deg, #0F6E56, #12A37B)", color: "white", fontWeight: 600 }}>
                   {submitting ? <Loader2 size={16} className="animate-spin" /> : <Upload size={16} />}
                   {submitting ? "Submitting…" : "Start verification"}
                 </button>
@@ -559,9 +598,9 @@ export function VerifyPage() {
       <PaymentModal
         isOpen={paymentModalOpen}
         checkoutUrl={checkoutResult ? extractCheckoutUrl(checkoutResult.checkout) : null}
-        transactionRef={uploadResult?.transaction?.reference ?? null}
-        amount={uploadResult?.transaction ? Number(uploadResult.transaction.amount) : undefined}
-        type="scan"
+        transactionRef={checkoutResult?.transaction?.reference ?? uploadResult?.transaction?.reference ?? null}
+        amount={checkoutResult?.transaction ? Number(checkoutResult.transaction.amount) : uploadResult?.transaction ? Number(uploadResult.transaction.amount) : undefined}
+        type={paymentModalType}
         onClose={() => setPaymentModalOpen(false)}
         onVerify={async (ref) => {
           try {
@@ -572,9 +611,32 @@ export function VerifyPage() {
           }
         }}
         onSuccess={() => {
+          const fileToSubmit = pendingVerificationFile;
+          setPendingVerificationFile(null);
           setSelectedFile(null);
           setUploadResult(null);
           setCheckoutResult(null);
+          setPaymentModalOpen(false);
+
+          if (fileToSubmit) {
+            setSubmitting(true);
+            api
+              .submitScan(fileToSubmit)
+              .then(async (submission) => {
+                setUploadResult(submission);
+                toast.success("Payment confirmed. Scan submitted successfully.");
+                await loadWorkspace();
+              })
+              .catch((error) => {
+                const message = error instanceof Error ? error.message : "Payment succeeded, but scan submission failed.";
+                toast.error(message);
+              })
+              .finally(() => {
+                setSubmitting(false);
+              });
+            return;
+          }
+
           void loadWorkspace();
         }}
       />

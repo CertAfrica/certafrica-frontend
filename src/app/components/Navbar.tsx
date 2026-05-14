@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router";
-import { Shield, Upload, CircleUserRound, DoorOpen } from "lucide-react";
+import { Shield, CircleUserRound, DoorOpen } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 
 export function Navbar() {
@@ -8,7 +8,7 @@ export function Navbar() {
 
   const publicLinks = [
     { to: "/pricing", label: "Pricing" },
-    { to: "/onboarding", label: "Onboarding" }
+    { to: "/onboarding", label: "Onboarding" },
   ];
 
   return (
@@ -84,7 +84,7 @@ export function Navbar() {
             })}
           </div>
           <Link
-            to="/verify"
+            to="/auth"
             className="hidden md:flex items-center gap-1.5 px-4 py-2 rounded-lg no-underline transition-all hover:opacity-90"
             style={{
               background: "linear-gradient(135deg, #0F6E56 0%, #12A37B 100%)",
@@ -107,6 +107,15 @@ export function Navbar() {
               <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "12px", color: "#F0F6FF", lineHeight: 1 }}>{user?.name}</div>
               <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "rgba(176,196,222,0.4)" }}>{user?.plan}</div>
             </div>
+          </div>
+          <div className="hidden sm:flex items-center gap-2">
+            <Link
+              to="/account"
+              className="px-3 py-1.5 rounded-lg no-underline"
+              style={{ background: "transparent", color: "rgba(176,196,222,0.9)", fontSize: 13 }}
+            >
+              Account
+            </Link>
             <button
               type="button"
               onClick={logout}
@@ -121,3 +130,5 @@ export function Navbar() {
     </nav>
   );
 }
+
+export default Navbar;

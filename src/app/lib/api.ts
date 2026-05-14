@@ -111,11 +111,11 @@ export const api = {
 
   getScan: (id: string) => apiRequest<Scan>(`/api/scans/${id}`, { method: "GET" }),
 
-  initializePayment: (payload: { type: "scan" | "wallet_topup" | "subscription"; scanId?: string; amount?: number; plan?: "STARTER" | "PRO" }) =>
+  initializePayment: (payload: { type: "scan" | "wallet_topup"; scanId?: string; amount?: number; plan?: "STARTER" | "PRO" }) =>
     apiRequest<PaymentCheckoutResponse>("/api/payments/initialize", { method: "POST", body: payload }),
 
   verifyPayment: (transactionRef: string) =>
-    apiRequest<{ processed: boolean; paymentStatus?: string }>(`/api/payments/verify/${transactionRef}`, { method: "GET" }),
+    apiRequest<{ processed: boolean; alreadyProcessed?: boolean; paymentStatus?: string }>(`/api/payments/verify/${transactionRef}`, { method: "GET" }),
 
   upgradeSubscription: (plan: "STARTER" | "PRO") =>
     apiRequest<PaymentCheckoutResponse>("/api/subscriptions/upgrade", { method: "POST", body: { plan } }),

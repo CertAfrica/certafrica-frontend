@@ -21,6 +21,7 @@ import {
 import { toast } from "sonner";
 import { useAuth } from "../context/AuthContext";
 import { api, extractCheckoutUrl } from "../lib/api";
+import QuickActions from "../components/QuickActions";
 import type { BillingHistoryItem, Scan, ScanUsageSummary, Wallet as WalletType } from "../lib/types";
 
 function formatCurrency(value: string | number | undefined, currency = "NGN") {
@@ -84,6 +85,36 @@ export function DashboardPage() {
       toast.error(error instanceof Error ? error.message : "Failed to load dashboard.");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const exportCsv = () => {
+    try {
+      const rows = scans.map((s) => ({
+        scanCode: s.scanCode,
+        fileName: s.fileName,
+        status: s.status,
+        verificationStatus: s.verificationStatus,
+        paymentStatus: s.paymentStatus,
+        trustScore: typeof s.trustScore === "number" ? s.trustScore : "",
+        createdAt: s.createdAt,
+      }));
+
+      const header = Object.keys(rows[0] ?? {}).join(",") + "\n";
+      const body = rows.map((r) => Object.values(r).map((v) => `"${String(v).replace(/"/g, '""')}"`).join(",")).join("\n");
+      const csv = header + body;
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `certafrica_scans_${new Date().toISOString().slice(0, 10)}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      toast.success("Export started");
+    } catch (err) {
+      toast.error("Unable to export CSV");
     }
   };
 
@@ -194,11 +225,22 @@ export function DashboardPage() {
                   : "Use your free scans each month or pay per verification when you run out."}
             </p>
           </div>
-          <button type="button" onClick={() => void loadDashboard()} className="inline-flex items-center gap-2 rounded-xl px-4 py-2.5" style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)", color: "rgba(176,196,222,0.82)" }}>
-            <TrendingUp size={14} />
-            Refresh data
-          </button>
+          <div className="flex items-center gap-3">
+            <button type="button" onClick={() => void loadDashboard()} className="inline-flex items-center gap-2 rounded-xl px-4 py-2.5" style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)", color: "rgba(176,196,222,0.82)" }}>
+              <TrendingUp size={14} />
+              Refresh data
+            </button>
+          </div>
         </div>
+
+        {/* Quick actions */}
+        <QuickActions
+          onUpload={() => (window.location.href = "/verify")}
+          onBulk={() => (window.location.href = "/bulk")}
+          onExport={exportCsv}
+          onInvite={() => (window.location.href = "/team")}
+          onTopup={() => (window.location.href = "/wallet")}
+        />
 
         {proPlan ? (
           <ProDashboard

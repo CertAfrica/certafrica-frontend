@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { X, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
@@ -27,15 +27,6 @@ export function PaymentModal({
   const [verifying, setVerifying] = useState(false);
   const [verified, setVerified] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [pollCount, setPollCount] = useState(0);
-
-  // Poll for payment verification after user closes the Squad window
-  useEffect(() => {
-    if (!isOpen || !transactionRef || verified || verifying) return;
-
-    // User must complete payment on Squad page, then click verify
-    // We don't auto-poll here to avoid hammering the API
-  }, [isOpen, transactionRef, verified, verifying]);
 
   const handleVerifyPayment = async () => {
     if (!transactionRef) return;
@@ -48,18 +39,10 @@ export function PaymentModal({
       if (success) {
         setVerified(true);
         toast.success("Payment verified successfully!");
-        setTimeout(() => {
-          onSuccess?.();
-          onClose();
-        }, 1500);
+        onSuccess?.();
+        onClose();
       } else {
         setError("Payment not completed yet. Please complete the transaction on Squad.");
-        setPollCount((c) => c + 1);
-        
-        // Auto-poll after 5 seconds if they haven't verified yet
-        if (pollCount < 2) {
-          setTimeout(handleVerifyPayment, 5000);
-        }
       }
     } catch (err) {
       const message = err instanceof Error ? err.message : "Verification failed";

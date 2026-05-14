@@ -68,7 +68,7 @@ export function PricingPage() {
   };
 
   return (
-    <div className="min-h-screen pt-16 px-6 md:px-10 py-12">
+    <div className="min-h-screen pt-26 px-6 md:px-10 py-12">
       <div className="max-w-6xl mx-auto space-y-10">
         <div>
           <div className="text-xs" style={{ color: "rgba(176,196,222,0.5)", letterSpacing: "0.08em" }}>PRICING</div>

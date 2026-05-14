@@ -13,6 +13,8 @@ import { WalletPage } from "./pages/WalletPage";
 import { TeamPage } from "./pages/TeamPage";
 import { BulkUploadPage } from "./pages/BulkUploadPage";
 import { OnboardingPage } from "./pages/OnboardingPage";
+import { AuthPage } from "./pages/AuthPage";
+import { AccountPage } from "./pages/Account";
 
 export const router = createBrowserRouter([
   {
@@ -23,12 +25,14 @@ export const router = createBrowserRouter([
       { path: "onboarding", Component: OnboardingPage },
       { path: "pricing", Component: PricingPage },
       { path: "verify", Component: VerifyPage },
+      { path: "auth", Component: AuthPage },
       { path: "dashboard", Component: DashboardPage },
       { path: "free/dashboard", Component: FreeDashboardPage },
       { path: "starter/dashboard", Component: StarterDashboardPage },
       { path: "pro/dashboard", Component: ProDashboardPage },
       { path: "billing", Component: BillingSettingsPage },
       { path: "wallet", Component: WalletPage },
+      { path: "account", Component: AccountPage },
       { path: "team", Component: TeamPage },
       { path: "bulk", Component: BulkUploadPage },
       { path: "results/:id", Component: ResultDetailPage },

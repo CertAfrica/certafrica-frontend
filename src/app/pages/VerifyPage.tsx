@@ -43,10 +43,6 @@ function scoreForScan(scan: Scan | null) {
 export function VerifyPage() {
   const { status, user, isAuthenticated, login, signup } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [mode, setMode] = useState<"signin" | "signup">("signin");
-  const [authForm, setAuthForm] = useState({ name: "", email: "", password: "" });
-  const [authBusy, setAuthBusy] = useState(false);
-  const [authError, setAuthError] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [dropActive, setDropActive] = useState(false);
@@ -58,8 +54,6 @@ export function VerifyPage() {
   const [loadingWorkspace, setLoadingWorkspace] = useState(false);
   const [workspaceError, setWorkspaceError] = useState<string | null>(null);
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
-  const [paymentModalType, setPaymentModalType] = useState<"scan" | "wallet_topup" | "subscription">("scan");
-  const [pendingVerificationFile, setPendingVerificationFile] = useState<File | null>(null);
 
   const loadWorkspace = useCallback(async () => {
     if (!isAuthenticated) return;
@@ -90,80 +84,12 @@ export function VerifyPage() {
     }
   }, [isAuthenticated, loadWorkspace]);
 
-  const handleAuthSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    setAuthBusy(true);
-    setAuthError(null);
-
-    try {
-      if (mode === "signin") {
-        await login({ email: authForm.email, password: authForm.password });
-        toast.success("Signed in successfully");
-      } else {
-        await signup({ name: authForm.name, email: authForm.email, password: authForm.password });
-        toast.success("Account created successfully");
-      }
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "Authentication failed.";
-      setAuthError(message);
-      toast.error(message);
-    } finally {
-      setAuthBusy(false);
-    }
-  };
+  // Authentication is handled on a dedicated `/auth` page.
 
   const handleVerification = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!selectedFile) {
       toast.error("Please choose a certificate file first.");
-      return;
-    }
-
-    const walletBalance = wallet ? Number(wallet.balance) : 0;
-    const requiresPrePayment =
-      (plan === "FREE" && usage?.monthlyRemaining === 0) ||
-      (plan === "STARTER" && usage?.monthlyRemaining === 0 && walletBalance <= 0);
-
-    if (requiresPrePayment) {
-      setSubmitting(true);
-      const paymentPopup = window.open("about:blank", "certafrica-prepay", "width=900,height=700");
-      if (paymentPopup) {
-        paymentPopup.document.write(
-          "<html><body style='font-family:sans-serif;background:#08111E;color:#F0F6FF;display:flex;align-items:center;justify-content:center;height:100vh;margin:0'>Opening Squad checkout…</body></html>"
-        );
-        paymentPopup.document.close();
-      }
-
-      try {
-        const amount = plan === "FREE" ? 500 : 400;
-        const payment = await api.initializePayment({ type: "wallet_topup", amount });
-        const checkoutUrl = extractCheckoutUrl(payment.checkout);
-
-        setCheckoutResult(payment);
-        setPaymentModalType("wallet_topup");
-        setPaymentModalOpen(true);
-        setPendingVerificationFile(selectedFile);
-
-        if (checkoutUrl) {
-          if (paymentPopup) {
-            paymentPopup.location.href = checkoutUrl;
-            paymentPopup.focus();
-          } else {
-            window.open(checkoutUrl, "_blank", "width=900,height=700");
-          }
-        } else if (paymentPopup) {
-          paymentPopup.close();
-        }
-
-        toast.message("Complete payment, then verify in the modal to submit your scan.");
-      } catch (error) {
-        if (paymentPopup) paymentPopup.close();
-        const message = error instanceof Error ? error.message : "Unable to initialize payment.";
-        toast.error(message);
-      } finally {
-        setSubmitting(false);
-      }
-
       return;
     }
 
@@ -180,12 +106,11 @@ export function VerifyPage() {
       const submission = await api.submitScan(selectedFile);
       setUploadResult(submission);
       setCheckoutResult(null);
-      toast.success("Certificate uploaded successfully");
-
       if (submission.paymentRequired && submission.transaction) {
+        toast.success("Certificate uploaded. Payment required to start verification.");
+
         const payment = await api.initializePayment({ type: "scan", scanId: submission.scan.id });
         setCheckoutResult(payment);
-        setPaymentModalType("scan");
         const checkoutUrl = extractCheckoutUrl(payment.checkout);
         if (checkoutUrl) {
           if (paymentPopup) {
@@ -199,7 +124,10 @@ export function VerifyPage() {
         }
         setPaymentModalOpen(true);
       } else if (paymentPopup) {
+        toast.success("Certificate uploaded successfully. Verification queued.");
         paymentPopup.close();
+      } else {
+        toast.success("Certificate uploaded successfully. Verification queued.");
       }
 
       await loadWorkspace();
@@ -258,77 +186,20 @@ export function VerifyPage() {
 
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen pt-16 px-6 md:px-10 py-10">
-        <div className="max-w-6xl mx-auto grid lg:grid-cols-[1.1fr_0.9fr] gap-6 items-start">
-          <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="rounded-3xl p-8 md:p-10" style={{ background: "linear-gradient(160deg, rgba(15,110,86,0.14), rgba(255,255,255,0.03))", border: "1px solid rgba(255,255,255,0.08)" }}>
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full mb-5" style={{ background: "rgba(18,163,123,0.12)", border: "1px solid rgba(18,163,123,0.28)" }}>
-              <ShieldCheck size={14} color="#12A37B" />
-              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "#12A37B", letterSpacing: "0.08em" }}>SECURE VERIFICATION FLOW</span>
+      <div className="min-h-screen pt-26 px-6 md:px-10 py-10">
+        <div className="max-w-3xl mx-auto">
+          <div className="rounded-3xl p-8" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" }}>
+            <h2 style={{ color: "#F0F6FF", fontSize: "1.6rem", marginBottom: 8 }}>Sign in to continue</h2>
+            <p style={{ color: "rgba(176,196,222,0.7)", marginBottom: 16 }}>Authentication is required to upload certificates, access wallet features, and view verification results.</p>
+            <div className="flex gap-3">
+              <Link to="/auth" className="inline-flex items-center gap-2 rounded-xl px-4 py-3 no-underline" style={{ background: "linear-gradient(135deg, #0F6E56, #12A37B)", color: "white", fontWeight: 600 }}>
+                <LogIn size={16} /> Sign in / Sign up
+              </Link>
+              <Link to="/pricing" className="inline-flex items-center gap-2 rounded-xl px-4 py-3 no-underline" style={{ background: "rgba(255,255,255,0.04)", color: "rgba(176,196,222,0.9)" }}>
+                View pricing
+              </Link>
             </div>
-            <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: "clamp(2rem, 5vw, 3.2rem)", color: "#F0F6FF", lineHeight: 1.1, marginBottom: "14px" }}>
-              Authenticate first, then verify faster.
-            </h1>
-            <p style={{ color: "rgba(176,196,222,0.72)", lineHeight: 1.75, maxWidth: "62ch" }}>
-              The backend requires a valid bearer token for uploads, scan history, wallet access, and payment checks. Sign in or create an account to unlock the certificate workflow.
-            </p>
-            <div className="grid sm:grid-cols-3 gap-3 mt-8">
-              {[
-                { title: "Upload", text: "Send PDF, PNG, JPG certificates securely to the backend." },
-                { title: "Pay", text: "Initialize Squad checkout when a scan requires payment." },
-                { title: "Track", text: "Follow scan status, wallet balance, and result history." },
-              ].map((item) => (
-                <div key={item.title} className="rounded-2xl p-4" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)" }}>
-                  <div style={{ color: "#F0F6FF", fontSize: "14px", fontWeight: 600, marginBottom: "6px" }}>{item.title}</div>
-                  <div style={{ color: "rgba(176,196,222,0.55)", fontSize: "12px", lineHeight: 1.6 }}>{item.text}</div>
-                </div>
-              ))}
-            </div>
-          </motion.div>
-
-          <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.08 }} className="rounded-3xl p-6 md:p-8" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" }}>
-            <div className="flex items-center justify-between mb-5">
-              <div>
-                <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "rgba(176,196,222,0.4)", letterSpacing: "0.08em" }}>AUTHENTICATION</div>
-                <h2 style={{ fontFamily: "'IBM Plex Sans', sans-serif", color: "#F0F6FF", fontSize: "1.2rem", marginTop: "4px" }}>{mode === "signin" ? "Welcome back" : "Create your workspace"}</h2>
-              </div>
-              <div className="inline-flex rounded-xl p-1" style={{ background: "rgba(255,255,255,0.04)" }}>
-                {(["signin", "signup"] as const).map((item) => (
-                  <button key={item} type="button" onClick={() => setMode(item)} className="px-3 py-1.5 rounded-lg" style={{ background: mode === item ? "rgba(18,163,123,0.16)" : "transparent", color: mode === item ? "#12A37B" : "rgba(176,196,222,0.7)", border: "none", fontSize: "12px" }}>
-                    {item === "signin" ? "Sign in" : "Sign up"}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <form className="space-y-4" onSubmit={handleAuthSubmit}>
-              {mode === "signup" && (
-                <label className="block">
-                  <span className="block mb-1 text-sm" style={{ color: "rgba(176,196,222,0.8)" }}>Full name</span>
-                  <input value={authForm.name} onChange={(event) => setAuthForm((current) => ({ ...current, name: event.target.value }))} className="w-full rounded-xl px-4 py-3" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", color: "#F0F6FF" }} placeholder="Adaeze Nwosu" required />
-                </label>
-              )}
-              <label className="block">
-                <span className="block mb-1 text-sm" style={{ color: "rgba(176,196,222,0.8)" }}>Email</span>
-                <input value={authForm.email} onChange={(event) => setAuthForm((current) => ({ ...current, email: event.target.value }))} type="email" className="w-full rounded-xl px-4 py-3" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", color: "#F0F6FF" }} placeholder="you@company.com" required />
-              </label>
-              <label className="block">
-                <span className="block mb-1 text-sm" style={{ color: "rgba(176,196,222,0.8)" }}>Password</span>
-                <input value={authForm.password} onChange={(event) => setAuthForm((current) => ({ ...current, password: event.target.value }))} type="password" className="w-full rounded-xl px-4 py-3" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", color: "#F0F6FF" }} placeholder="At least 8 characters" required minLength={8} />
-              </label>
-
-              {authError && (
-                <div className="flex items-start gap-2 rounded-xl px-4 py-3" style={{ background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.18)" }}>
-                  <AlertCircle size={16} color="#EF4444" className="mt-0.5" />
-                  <p className="m-0 text-sm" style={{ color: "rgba(255,255,255,0.82)" }}>{authError}</p>
-                </div>
-              )}
-
-              <button type="submit" disabled={authBusy} className="w-full inline-flex items-center justify-center gap-2 rounded-xl px-4 py-3 transition-opacity disabled:opacity-60" style={{ background: "linear-gradient(135deg, #0F6E56, #12A37B)", color: "white", fontWeight: 600 }}>
-                {authBusy ? <Loader2 size={16} className="animate-spin" /> : <LogIn size={16} />}
-                {mode === "signin" ? "Sign in and continue" : "Create account"}
-              </button>
-            </form>
-          </motion.div>
+          </div>
         </div>
       </div>
     );
@@ -424,6 +295,45 @@ export function VerifyPage() {
                 </div>
               </div>
             )}
+
+            {/* Plan-aware banner */}
+            <div className="mb-4 rounded-lg p-3" style={{ background: user?.plan === "FREE" ? "rgba(59,139,212,0.06)" : "rgba(18,163,123,0.06)", border: "1px solid rgba(255,255,255,0.04)" }}>
+              {user?.plan === "FREE" ? (
+                <div style={{ color: "rgba(176,196,222,0.9)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <div>
+                    <strong style={{ color: "#F0F6FF" }}>Free plan</strong>
+                    <div style={{ fontSize: 13, color: "rgba(176,196,222,0.7)" }}>
+                      {usage?.monthlyRemaining != null ? `You have ${usage.monthlyRemaining} free verifications left this month.` : "You have limited free verifications."}
+                    </div>
+                  </div>
+                  <div>
+                    <a href="/pricing" className="px-3 py-1 rounded-lg no-underline" style={{ background: "rgba(255,255,255,0.04)", color: "rgba(176,196,222,0.9)" }}>Upgrade</a>
+                  </div>
+                </div>
+              ) : user?.plan === "STARTER" ? (
+                <div style={{ color: "rgba(176,196,222,0.9)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <div>
+                    <strong style={{ color: "#F0F6FF" }}>Starter</strong>
+                    <div style={{ fontSize: 13, color: "rgba(176,196,222,0.7)" }}>
+                      {wallet ? `Wallet balance: ₦${wallet.balance.toLocaleString()}` : "Wallet access enabled."}
+                    </div>
+                  </div>
+                  <div>
+                    <a href="/wallet" className="px-3 py-1 rounded-lg no-underline" style={{ background: "linear-gradient(135deg, #0F6E56 0%, #12A37B 100%)", color: "white" }}>Top up</a>
+                  </div>
+                </div>
+              ) : (
+                <div style={{ color: "rgba(176,196,222,0.9)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <div>
+                    <strong style={{ color: "#F0F6FF" }}>{user?.plan ?? "PRO"}</strong>
+                    <div style={{ fontSize: 13, color: "rgba(176,196,222,0.7)" }}>Unlimited verifications and priority processing.</div>
+                  </div>
+                  <div>
+                    <a href="/billing" className="px-3 py-1 rounded-lg no-underline" style={{ background: "rgba(255,255,255,0.04)", color: "rgba(176,196,222,0.9)" }}>Billing</a>
+                  </div>
+                </div>
+              )}
+            </div>
 
             <form onSubmit={handleVerification} className="rounded-3xl p-6 md:p-7" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" }}>
               <div className="flex items-center justify-between gap-4 mb-5">
@@ -600,43 +510,21 @@ export function VerifyPage() {
         checkoutUrl={checkoutResult ? extractCheckoutUrl(checkoutResult.checkout) : null}
         transactionRef={checkoutResult?.transaction?.reference ?? uploadResult?.transaction?.reference ?? null}
         amount={checkoutResult?.transaction ? Number(checkoutResult.transaction.amount) : uploadResult?.transaction ? Number(uploadResult.transaction.amount) : undefined}
-        type={paymentModalType}
+        type="scan"
         onClose={() => setPaymentModalOpen(false)}
         onVerify={async (ref) => {
           try {
             const result = await api.verifyPayment(ref);
-            return result.processed === true;
+            return result.processed === true || result.alreadyProcessed === true;
           } catch {
             return false;
           }
         }}
         onSuccess={() => {
-          const fileToSubmit = pendingVerificationFile;
-          setPendingVerificationFile(null);
           setSelectedFile(null);
           setUploadResult(null);
           setCheckoutResult(null);
           setPaymentModalOpen(false);
-
-          if (fileToSubmit) {
-            setSubmitting(true);
-            api
-              .submitScan(fileToSubmit)
-              .then(async (submission) => {
-                setUploadResult(submission);
-                toast.success("Payment confirmed. Scan submitted successfully.");
-                await loadWorkspace();
-              })
-              .catch((error) => {
-                const message = error instanceof Error ? error.message : "Payment succeeded, but scan submission failed.";
-                toast.error(message);
-              })
-              .finally(() => {
-                setSubmitting(false);
-              });
-            return;
-          }
-
           void loadWorkspace();
         }}
       />

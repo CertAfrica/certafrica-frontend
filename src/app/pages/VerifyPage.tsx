@@ -339,44 +339,7 @@ export function VerifyPage() {
 
             {plan === "FREE" && usage?.monthlyRemaining === 0 && (
               <div className="rounded-2xl p-4 text-sm" style={{ background: "rgba(245,158,11,0.12)", border: "1px solid rgba(245,158,11,0.22)", color: "rgba(255,255,255,0.86)" }}>
-                <div className="flex items-center justify-between gap-2">
-                  <span>Free scans are exhausted. Pay ₦500 to verify the next certificate.</span>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const paymentPopup = window.open("about:blank", "certafrica-topup-free", "width=900,height=700");
-                      if (paymentPopup) {
-                        paymentPopup.document.write(
-                          "<html><body style='font-family:sans-serif;background:#08111E;color:#F0F6FF;display:flex;align-items:center;justify-content:center;height:100vh;margin:0'>Opening Squad checkout…</body></html>"
-                        );
-                        paymentPopup.document.close();
-                      }
-
-                      const amount = 500;
-                      toast.promise(
-                        api.topupWallet(amount).then((checkout) => {
-                          const url = extractCheckoutUrl(checkout.checkout);
-                          if (url) {
-                            if (paymentPopup) {
-                              paymentPopup.location.href = url;
-                              paymentPopup.focus();
-                            } else {
-                              window.open(url, "_blank", "noopener,noreferrer,width=900,height=700");
-                            }
-                          } else if (paymentPopup) {
-                            paymentPopup.close();
-                          }
-                          return "Checkout opened";
-                        }),
-                        { success: "Wallet top-up checkout opened", error: "Top-up failed" }
-                      );
-                    }}
-                    className="px-3 py-1.5 rounded-lg text-xs font-500 whitespace-nowrap"
-                    style={{ background: "rgba(255,255,255,0.12)", border: "none", color: "#F0F6FF" }}
-                  >
-                    <CreditCard size={12} className="inline mr-1" /> Pay now
-                  </button>
-                </div>
+                <span>Free scans are exhausted. Click Start verification to open payment for the next certificate.</span>
               </div>
             )}
 

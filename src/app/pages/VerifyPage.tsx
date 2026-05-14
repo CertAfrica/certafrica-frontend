@@ -43,6 +43,7 @@ function scoreForScan(scan: Scan | null) {
 export function VerifyPage() {
   const { status, user, isAuthenticated, login, signup } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const paymentPollRef = useRef<number | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [dropActive, setDropActive] = useState(false);
@@ -54,6 +55,7 @@ export function VerifyPage() {
   const [loadingWorkspace, setLoadingWorkspace] = useState(false);
   const [workspaceError, setWorkspaceError] = useState<string | null>(null);
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
+  const [verifyingTransaction, setVerifyingTransaction] = useState(false);
 
   const loadWorkspace = useCallback(async () => {
     if (!isAuthenticated) return;
@@ -83,6 +85,61 @@ export function VerifyPage() {
       void loadWorkspace();
     }
   }, [isAuthenticated, loadWorkspace]);
+
+  useEffect(() => {
+    const transactionRef = checkoutResult?.transaction?.reference;
+
+    if (!paymentModalOpen || !transactionRef) {
+      if (paymentPollRef.current !== null) {
+        window.clearInterval(paymentPollRef.current);
+        paymentPollRef.current = null;
+      }
+      setVerifyingTransaction(false);
+      return;
+    }
+
+    let cancelled = false;
+
+    const verifyPaymentNow = async () => {
+      setVerifyingTransaction(true);
+      try {
+        const result = await api.verifyPayment(transactionRef);
+        if (cancelled) return;
+
+        if (result.processed === true || result.alreadyProcessed === true) {
+          toast.success("Payment verified and scan queued.");
+          if (paymentPollRef.current !== null) {
+            window.clearInterval(paymentPollRef.current);
+            paymentPollRef.current = null;
+          }
+          setVerifyingTransaction(false);
+          setPaymentModalOpen(false);
+          setCheckoutResult(null);
+          await loadWorkspace();
+        }
+      } catch {
+        // Keep polling silently; the payment gateway may still be updating.
+      } finally {
+        if (!cancelled) {
+          setVerifyingTransaction(true);
+        }
+      }
+    };
+
+    void verifyPaymentNow();
+
+    paymentPollRef.current = window.setInterval(() => {
+      void verifyPaymentNow();
+    }, 10000) as unknown as number;
+
+    return () => {
+      cancelled = true;
+      if (paymentPollRef.current !== null) {
+        window.clearInterval(paymentPollRef.current);
+        paymentPollRef.current = null;
+      }
+    };
+  }, [checkoutResult?.transaction?.reference, paymentModalOpen, loadWorkspace]);
 
   // Authentication is handled on a dedicated `/auth` page.
 
@@ -162,6 +219,7 @@ export function VerifyPage() {
   const queuedScans = useMemo(() => recentScans.filter((scan) => scan.status === "QUEUED" || scan.status === "PROCESSING").length, [recentScans]);
   const plan = user?.plan ?? "FREE";
   const showWallet = plan !== "FREE";
+  const isPollingPayment = verifyingTransaction && paymentModalOpen;
 
   // Payment gate status
   const walletBalance = wallet ? Number(wallet.balance) : 0;
@@ -372,9 +430,9 @@ export function VerifyPage() {
                 <div style={{ color: "rgba(176,196,222,0.58)", fontSize: "12px" }}>
                   {selectedFile ? `Selected: ${selectedFile.name}` : "No file selected yet."}
                 </div>
-                <button type="submit" disabled={submitting || !selectedFile} className="inline-flex items-center gap-2 rounded-xl px-5 py-3 transition-opacity disabled:opacity-60" style={{ background: "linear-gradient(135deg, #0F6E56, #12A37B)", color: "white", fontWeight: 600 }}>
-                  {submitting ? <Loader2 size={16} className="animate-spin" /> : <Upload size={16} />}
-                  {submitting ? "Submitting…" : "Start verification"}
+                <button type="submit" disabled={submitting || !selectedFile || isPollingPayment} className="inline-flex items-center gap-2 rounded-xl px-5 py-3 transition-opacity disabled:opacity-60" style={{ background: "linear-gradient(135deg, #0F6E56, #12A37B)", color: "white", fontWeight: 600 }}>
+                  {submitting || isPollingPayment ? <Loader2 size={16} className="animate-spin" /> : <Upload size={16} />}
+                  {submitting ? "Submitting…" : isPollingPayment ? "Verifying transaction…" : "Start verification"}
                 </button>
               </div>
 
@@ -511,6 +569,7 @@ export function VerifyPage() {
         transactionRef={checkoutResult?.transaction?.reference ?? uploadResult?.transaction?.reference ?? null}
         amount={checkoutResult?.transaction ? Number(checkoutResult.transaction.amount) : uploadResult?.transaction ? Number(uploadResult.transaction.amount) : undefined}
         type="scan"
+        isAutoVerifying={isPollingPayment}
         onClose={() => setPaymentModalOpen(false)}
         onVerify={async (ref) => {
           try {
@@ -525,6 +584,7 @@ export function VerifyPage() {
           setUploadResult(null);
           setCheckoutResult(null);
           setPaymentModalOpen(false);
+          setVerifyingTransaction(false);
           void loadWorkspace();
         }}
       />

@@ -9,6 +9,7 @@ export interface PaymentModalProps {
   transactionRef: string | null;
   amount?: number;
   type?: "scan" | "wallet_topup" | "subscription";
+  isAutoVerifying?: boolean;
   onClose: () => void;
   onVerify: (transactionRef: string) => Promise<boolean>;
   onSuccess?: () => void;
@@ -20,6 +21,7 @@ export function PaymentModal({
   transactionRef,
   amount,
   type = "scan",
+  isAutoVerifying = false,
   onClose,
   onVerify,
   onSuccess,
@@ -152,13 +154,13 @@ export function PaymentModal({
                     <button
                       type="button"
                       onClick={handleVerifyPayment}
-                      disabled={verifying}
+                      disabled={verifying || isAutoVerifying}
                       className="w-full py-3 rounded-xl transition-opacity disabled:opacity-60"
                       style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.1)", color: "rgba(176,196,222,0.9)", fontWeight: 500, cursor: "pointer" }}
                     >
-                      {verifying ? (
+                      {verifying || isAutoVerifying ? (
                         <span className="inline-flex items-center gap-2">
-                          <Loader2 size={16} className="animate-spin" /> Verifying…
+                          <Loader2 size={16} className="animate-spin" /> Verifying transaction…
                         </span>
                       ) : (
                         "Verify Payment"

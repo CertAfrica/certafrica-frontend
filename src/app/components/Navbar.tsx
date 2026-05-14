@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router";
-import { Shield, Upload, CircleUserRound } from "lucide-react";
+import { Shield, Upload, CircleUserRound, DoorOpen } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 
 export function Navbar() {
@@ -8,8 +8,7 @@ export function Navbar() {
 
   const publicLinks = [
     { to: "/pricing", label: "Pricing" },
-    { to: "/onboarding", label: "Onboarding" },
-    { to: "/verify", label: "Verify" },
+    { to: "/onboarding", label: "Onboarding" }
   ];
 
   return (
@@ -45,7 +44,7 @@ export function Navbar() {
               letterSpacing: "-0.02em",
             }}
           >
-            CertChain
+            CertAfrica
           </span>
           <span
             style={{
@@ -96,8 +95,8 @@ export function Navbar() {
               letterSpacing: "0.02em",
             }}
           >
-            <Upload size={12} />
-            Start Verification
+            <DoorOpen size={12} />
+            Login
           </Link>
         </div>
       ) : (

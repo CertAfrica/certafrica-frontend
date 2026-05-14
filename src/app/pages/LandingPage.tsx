@@ -59,13 +59,7 @@ const howItWorks = [
     icon: Eye,
     title: "Authenticity Score",
     desc: "Weighted ensemble produces a 0–100 score with plain-English explainability — no black box, every flag is explained.",
-  },
-  {
-    num: "04",
-    icon: Lock,
-    title: "Squad API Gate",
-    desc: "Credential-dependent payments (licensing fees, admission deposits) are automatically held or released based on score.",
-  },
+  }
 ];
 
 const features = [
@@ -193,7 +187,7 @@ export function LandingPage() {
               marginBottom: "2.5rem",
             }}
           >
-            CertChain AI is a multi-modal credential intelligence platform that detects forged WAEC results, fake degrees, and fraudulent NYSC letters — with an economically-enforceable Squad API payment gate.
+            CertAfrica AI is a multi-modal credential intelligence platform that detects forged WAEC results, fake degrees, and fraudulent NYSC letters — with an economically-enforceable Squad API payment gate.
           </motion.p>
 
           {/* CTA buttons */}
@@ -219,20 +213,7 @@ export function LandingPage() {
               Verify a Document
               <ArrowRight size={14} />
             </Link>
-            <Link
-              to="/dashboard"
-              className="flex items-center gap-2 px-6 py-3 rounded-xl no-underline transition-all hover:opacity-90"
-              style={{
-                background: "rgba(255,255,255,0.06)",
-                border: "1px solid rgba(255,255,255,0.12)",
-                color: "rgba(176, 196, 222, 0.9)",
-                fontSize: "14px",
-                fontWeight: 500,
-                fontFamily: "'IBM Plex Sans', sans-serif",
-              }}
-            >
-              View Dashboard
-            </Link>
+           
           </motion.div>
 
           {/* Stats */}
@@ -329,14 +310,14 @@ export function LandingPage() {
             </div>
             <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: "clamp(1.8rem, 4vw, 2.6rem)", color: "#F0F6FF", lineHeight: 1.2, marginBottom: "12px" }}>
               From Upload to Verified in{" "}
-              <em style={{ color: "#12A37B" }}>Under 90 Seconds</em>
+              <em style={{ color: "#12A37B" }}>Under 60 Seconds</em>
             </h2>
             <p style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "14px", color: "rgba(176,196,222,0.6)", maxWidth: "480px", margin: "0 auto" }}>
-              A four-layer AI pipeline that pre-screens at scale — so expensive manual checks only happen when they're truly needed.
+              A three-layer AI pipeline that pre-screens at scale — so expensive manual checks only happen when they're truly needed.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {howItWorks.map((step, i) => (
               <motion.div
                 key={i}
@@ -700,15 +681,63 @@ export function LandingPage() {
 
       {/* Footer */}
       <footer
-        className="py-6 text-center"
+        className="pt-12 pb-8"
         style={{
           borderTop: "1px solid rgba(255,255,255,0.06)",
           background: "#08111E",
         }}
       >
-        <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "rgba(176,196,222,0.3)", letterSpacing: "0.05em" }}>
-          CertChain AI — PRD v1.0 · Challenge 01: Proof of Life · Education Domain
-        </span>
+        <div className="max-w-6xl mx-auto px-6 md:px-10">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 text-left mb-6">
+            <div>
+              <div style={{ fontFamily: "'Playfair Display', serif", fontSize: "20px", color: "#F0F6FF", fontWeight: 600 }}>
+                CertAfica
+              </div>
+              <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "12px", color: "rgba(176,196,222,0.7)", marginTop: "6px" }}>
+                Real-time credential verification and integrity reports for education and professional sectors.
+              </div>
+            </div>
+
+            <div>
+              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "rgba(176,196,222,0.35)", marginBottom: "8px" }}>PRODUCT</div>
+              <ul className="space-y-2">
+                <li><Link to="/verify" className="no-underline" style={{ color: "rgba(176,196,222,0.8)" }}>Verify Document</Link></li>
+                <li><Link to="/pricing" className="no-underline" style={{ color: "rgba(176,196,222,0.8)" }}>Pricing</Link></li>
+                <li><Link to="/docs" className="no-underline" style={{ color: "rgba(176,196,222,0.8)" }}>API & Docs</Link></li>
+              </ul>
+            </div>
+
+            <div>
+              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "rgba(176,196,222,0.35)", marginBottom: "8px" }}>COMPANY</div>
+              <ul className="space-y-2">
+                <li><Link to="/about" className="no-underline" style={{ color: "rgba(176,196,222,0.8)" }}>About</Link></li>
+                <li><Link to="/careers" className="no-underline" style={{ color: "rgba(176,196,222,0.8)" }}>Careers</Link></li>
+                <li><Link to="/contact" className="no-underline" style={{ color: "rgba(176,196,222,0.8)" }}>Contact</Link></li>
+              </ul>
+            </div>
+
+            <div>
+              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "rgba(176,196,222,0.35)", marginBottom: "8px" }}>LEGAL & SUPPORT</div>
+              <ul className="space-y-2">
+                <li><a href="/privacy" className="no-underline" style={{ color: "rgba(176,196,222,0.8)" }}>Privacy Policy</a></li>
+                <li><a href="/terms" className="no-underline" style={{ color: "rgba(176,196,222,0.8)" }}>Terms of Service</a></li>
+                <li><a href="mailto:support@certafrica.ng" className="no-underline" style={{ color: "rgba(176,196,222,0.8)" }}>support@certafrica.ng</a></li>
+              </ul>
+            </div>
+          </div>
+
+          <div className="flex flex-col md:flex-row items-center justify-between text-sm" style={{ borderTop: "1px solid rgba(255,255,255,0.03)", paddingTop: "12px" }}>
+            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "12px", color: "rgba(176,196,222,0.45)" }}>
+              © {new Date().getFullYear()} CertAfrica Ltd. All rights reserved.
+            </div>
+
+            <div style={{ marginTop: "8px" }}>
+              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "rgba(176,196,222,0.35)", letterSpacing: "0.04em" }}>
+                Built with ♥ in Nigeria — <a href="https://certafrica.ng" className="no-underline" style={{ color: "#12A37B" }}>certafrica.ng</a>
+              </span>
+            </div>
+          </div>
+        </div>
       </footer>
     </div>
   );

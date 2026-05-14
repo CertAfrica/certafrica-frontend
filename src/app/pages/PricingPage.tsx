@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router";
-import { CheckCircle2, CreditCard } from "lucide-react";
+import { CheckCircle2, CreditCard, Sparkles, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 import { api, extractCheckoutUrl } from "../lib/api";
 import { useAuth } from "../context/AuthContext";
@@ -30,8 +30,11 @@ const plans = [
 ] as const;
 
 export function PricingPage() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const [busyPlan, setBusyPlan] = useState<string | null>(null);
+
+  const currentPlan = user?.plan ?? "FREE";
+  const isCurrentPlan = (planKey: string) => currentPlan === planKey;
 
   const handleUpgrade = async (plan: "STARTER" | "PRO") => {
     const paymentPopup = window.open("about:blank", "certafrica-plan-upgrade", "width=900,height=700");
@@ -74,6 +77,18 @@ export function PricingPage() {
           <div className="text-xs" style={{ color: "rgba(176,196,222,0.5)", letterSpacing: "0.08em" }}>PRICING</div>
           <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: "clamp(2rem, 4vw, 3rem)", color: "#F0F6FF", marginTop: "8px" }}>Pick the plan that matches your verification volume.</h1>
           <p style={{ color: "rgba(176,196,222,0.7)", maxWidth: "70ch", marginTop: "10px" }}>Plans reset monthly. Wallet deductions apply automatically when your free scans are exhausted.</p>
+          <div className="mt-5 inline-flex items-center gap-3 rounded-2xl px-4 py-3" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)" }}>
+            <div className="rounded-full p-2" style={{ background: "rgba(18,163,123,0.12)" }}>
+              <ShieldCheck size={14} color="#12A37B" />
+            </div>
+            <div>
+              <div style={{ color: "#F0F6FF", fontSize: "13px", fontWeight: 600 }}>Current plan: {currentPlan}</div>
+              <div style={{ color: "rgba(176,196,222,0.6)", fontSize: "12px" }}>Simple monthly pricing with automatic verification flow.</div>
+            </div>
+            <div className="rounded-full px-3 py-1" style={{ background: "rgba(18,163,123,0.08)", color: "#12A37B", fontSize: "11px", fontWeight: 600 }}>
+              <Sparkles size={12} className="inline mr-1" /> Live billing
+            </div>
+          </div>
         </div>
 
         <div className="grid lg:grid-cols-3 gap-6">
@@ -96,7 +111,11 @@ export function PricingPage() {
                   <Link to="/verify" className="inline-flex items-center gap-2 rounded-xl px-4 py-3 no-underline" style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)", color: "#F0F6FF" }}>
                     Continue on Free
                   </Link>
-                ) : isAuthenticated ? (
+                ) : isAuthenticated ? isCurrentPlan(plan.key) ? (
+                  <Link to="/account" className="inline-flex items-center gap-2 rounded-xl px-4 py-3 no-underline" style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)", color: "#F0F6FF" }}>
+                    Current plan
+                  </Link>
+                ) : (
                   <button
                     type="button"
                     onClick={() => handleUpgrade(plan.key)}
@@ -108,7 +127,7 @@ export function PricingPage() {
                     {busyPlan === plan.key ? "Starting checkout…" : `Upgrade to ${plan.title}`}
                   </button>
                 ) : (
-                  <Link to="/verify" className="inline-flex items-center gap-2 rounded-xl px-4 py-3 no-underline" style={{ background: "linear-gradient(135deg, #0F6E56, #12A37B)", color: "white", fontWeight: 600 }}>
+                  <Link to="/auth" className="inline-flex items-center gap-2 rounded-xl px-4 py-3 no-underline" style={{ background: "linear-gradient(135deg, #0F6E56, #12A37B)", color: "white", fontWeight: 600 }}>
                     Sign in to upgrade
                   </Link>
                 )}

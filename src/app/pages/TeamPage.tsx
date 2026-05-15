@@ -24,7 +24,7 @@ export function TeamPage() {
   };
 
   return (
-    <div className="min-h-screen pt-16 px-6 md:px-10 py-12">
+    <div className="min-h-screen pt-26 px-6 md:px-10 py-12">
       <div className="max-w-4xl mx-auto space-y-6">
         <div>
           <div style={{ color: "rgba(176,196,222,0.5)", fontSize: "11px", letterSpacing: "0.08em" }}>

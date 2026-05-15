@@ -91,7 +91,7 @@ export function DashboardPage() {
         : "Use your free scans each month or pay per verification when you run out.";
 
   return (
-    <div className="min-h-screen pt-16 px-6 md:px-10 py-10">
+    <div className="min-h-screen pt-26 px-6 md:px-10 py-10">
       <div className="max-w-6xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex flex-wrap items-start justify-between gap-4">

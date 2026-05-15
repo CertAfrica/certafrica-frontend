@@ -76,6 +76,9 @@ export const api = {
   refresh: (payload: { refreshToken: string }) =>
     apiRequest<{ accessToken: string; refreshToken: string }>("/api/auth/refresh", { method: "POST", body: payload }),
 
+  getMe: () =>
+    apiRequest<{ id: string; name: string; email: string; role: string; plan: string }>("/api/auth/me", { method: "GET" }),
+
   resendVerification: (payload: { email: string }) =>
     apiRequest<{ sent: boolean }>("/api/auth/resend-verification", { method: "POST", body: payload }),
 

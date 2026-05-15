@@ -38,7 +38,7 @@ export function SettingsPage() {
   const { logout } = useAuth();
 
   return (
-    <div className="min-h-screen pt-16 px-6 md:px-10 py-10">
+    <div className="min-h-screen pt-26 px-6 md:px-10 py-10">
       <div className="max-w-6xl mx-auto space-y-6">
         <div>
           <div

@@ -219,7 +219,7 @@ export function VerifyPage() {
   // Loading state
   if (status === "loading") {
     return (
-      <div className="min-h-[calc(100vh-64px)] pt-16 flex items-center justify-center px-6">
+      <div className="min-h-[calc(100vh-64px)] pt-26 flex items-center justify-center px-6">
         <div className="text-center">
           <Loader2 className="mx-auto mb-3 animate-spin" size={28} color="#12A37B" />
           <p style={{ color: "rgba(176,196,222,0.7)" }}>Loading workspace…</p>

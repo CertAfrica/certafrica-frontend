@@ -210,7 +210,7 @@ export function ResultDetailPage() {
   // Error state
   if (!scan || error) {
     return (
-      <div className="min-h-screen pt-16 px-6 md:px-10 py-12">
+      <div className="min-h-screen pt-26 px-6 md:px-10 py-12">
         <div
           className="max-w-3xl mx-auto rounded-3xl p-8"
           style={{
@@ -267,7 +267,7 @@ export function ResultDetailPage() {
   const anomalyPairs = scan.anomalyData ? objectPairs(scan.anomalyData) : [];
 
   return (
-    <div className="min-h-screen pt-16 px-6 md:px-10 py-10">
+    <div className="min-h-screen pt-26 px-6 md:px-10 py-10">
       <div className="max-w-6xl mx-auto space-y-6">
         {/* Breadcrumb + actions */}
         <div className="flex flex-wrap items-start justify-between gap-4">

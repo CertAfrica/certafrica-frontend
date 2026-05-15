@@ -3,6 +3,7 @@ import { Link } from "react-router";
 import { ShieldCheck, LogIn, Loader2, Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "../context/AuthContext";
+import {useNavigate} from "react-router"
 
 export function AuthPage() {
   const { login, signup } = useAuth();
@@ -11,6 +12,7 @@ export function AuthPage() {
   const [authBusy, setAuthBusy] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
+  const navigate = useNavigate();
 
   const handleAuthSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -21,9 +23,12 @@ export function AuthPage() {
       if (mode === "signin") {
         await login({ email: authForm.email, password: authForm.password });
         toast.success("Signed in successfully");
+        navigate("/dashboard");
+
       } else {
         await signup({ name: authForm.name, email: authForm.email, password: authForm.password });
         toast.success("Account created successfully");
+        navigate("/dashboard");
       }
     } catch (error) {
       const message = error instanceof Error ? error.message : "Authentication failed.";

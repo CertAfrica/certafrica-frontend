@@ -34,7 +34,7 @@ export function BillingSettingsPage() {
   }, []);
 
   return (
-    <div className="min-h-screen pt-16 px-6 md:px-10 py-12">
+    <div className="min-h-screen pt-26 px-6 md:px-10 py-12">
       <div className="max-w-5xl mx-auto space-y-6">
         <div className="flex items-center justify-between">
           <div>

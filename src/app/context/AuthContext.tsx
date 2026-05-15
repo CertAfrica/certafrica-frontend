@@ -82,7 +82,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     refreshSession: async () => {
       if (!session?.refreshToken) return;
       const tokens = await api.refresh({ refreshToken: session.refreshToken });
-      const next = persistAuth({ user: session.user, ...tokens });
+      const freshUser = await api.getMe();
+      const next = persistAuth({ user: freshUser as any, ...tokens });
       setSession(next);
       setStatus("authenticated");
     },

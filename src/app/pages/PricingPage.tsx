@@ -84,7 +84,7 @@ export function PricingPage() {
   };
 
   return (
-    <div className="min-h-screen pt-16 px-6 md:px-10 py-16">
+    <div className="min-h-screen pt-26 px-6 md:px-10 py-16">
       <div className="max-w-6xl mx-auto space-y-12">
         {/* Header */}
         <div className="text-center max-w-2xl mx-auto certafrica-fade-in">

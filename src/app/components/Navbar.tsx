@@ -108,7 +108,7 @@ export function Navbar() {
               })}
             </div>
             <Link
-              to="/verify"
+              to="/auth"
               className="flex items-center gap-1.5 px-4 py-2 rounded-lg no-underline transition-all hover:opacity-90"
               style={{
                 background: "linear-gradient(135deg, #0F6E56 0%, #12A37B 100%)",

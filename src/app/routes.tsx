@@ -7,6 +7,8 @@ import { VerifyPage } from "./pages/VerifyPage";
 import { DashboardPage } from "./pages/DashboardPage";
 import { ResultDetailPage } from "./pages/ResultDetailPage";
 import { PricingPage } from "./pages/PricingPage";
+import { PrivacyPage } from "./pages/PrivacyPage";
+import { TermsPage } from "./pages/TermsPage";
 import { BillingSettingsPage } from "./pages/BillingSettingsPage";
 import { WalletPage } from "./pages/WalletPage";
 import { TeamPage } from "./pages/TeamPage";
@@ -14,6 +16,7 @@ import { BulkUploadPage } from "./pages/BulkUploadPage";
 import { OnboardingPage } from "./pages/OnboardingPage";
 import { SettingsPage } from "./pages/SettingsPage";
 import { NotFoundPage } from "./pages/NotFoundPage";
+import AuthPage from "./pages/AuthPage";
 
 export const router = createBrowserRouter([
   {
@@ -23,8 +26,10 @@ export const router = createBrowserRouter([
       // Public
       { index: true, Component: LandingPage },
       { path: "onboarding", Component: OnboardingPage },
+      { path: "privacy", Component: PrivacyPage },
+      { path: "terms", Component: TermsPage },
       { path: "pricing", Component: PricingPage },
-      { path: "verify", Component: VerifyPage },
+      { path: "auth", Component: AuthPage },
 
       // Authenticated
       {
@@ -34,6 +39,14 @@ export const router = createBrowserRouter([
             <DashboardPage />
           </ProtectedRoute>
         ),
+      },
+      {
+        path: "verify",
+        element: (
+          <ProtectedRoute>
+            <VerifyPage />
+          </ProtectedRoute>
+        )
       },
       {
         path: "settings",

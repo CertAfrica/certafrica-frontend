@@ -149,7 +149,7 @@ export function LandingPage() {
           >
             <div className="w-1.5 h-1.5 rounded-full" style={{ background: "#12A37B" }} />
             <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "#12A37B", letterSpacing: "0.08em" }}>
-              PRD v1.0 — Education Integrity · Challenge 01
+              CertAfrica AI — Trusted Credentials Instantly
             </span>
           </motion.div>
 
@@ -629,55 +629,6 @@ export function LandingPage() {
         </div>
       </section>
 
-      {/* Final CTA */}
-      <section
-        className="py-20"
-        style={{
-          background: "linear-gradient(135deg, #091520 0%, #06190F 100%)",
-          borderTop: "1px solid rgba(18,163,123,0.15)",
-        }}
-      >
-        <div className="max-w-3xl mx-auto px-6 text-center">
-          <motion.div
-            initial={{ opacity: 0, y: 24 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            viewport={{ once: true }}
-          >
-            <h2
-              style={{
-                fontFamily: "'Playfair Display', serif",
-                fontSize: "clamp(1.8rem, 4vw, 2.8rem)",
-                color: "#F0F6FF",
-                lineHeight: 1.2,
-                marginBottom: "16px",
-              }}
-            >
-              Try the{" "}
-              <em style={{ color: "#12A37B" }}>Live Demo</em>
-            </h2>
-            <p style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "14.5px", color: "rgba(176,196,222,0.65)", lineHeight: 1.75, marginBottom: "32px" }}>
-              Upload a synthetic forged WAEC result — watch the model flag the font inconsistency in the grade column. Then try the genuine version. See Squad API gate a ₦50,000 licensing payment in real time.
-            </p>
-            <Link
-              to="/verify"
-              className="inline-flex items-center gap-2 px-8 py-4 rounded-xl no-underline transition-all hover:opacity-90 hover:-translate-y-0.5"
-              style={{
-                background: "linear-gradient(135deg, #0F6E56, #12A37B)",
-                color: "white",
-                fontSize: "15px",
-                fontWeight: 600,
-                fontFamily: "'IBM Plex Sans', sans-serif",
-                boxShadow: "0 12px 40px rgba(18,163,123,0.35)",
-              }}
-            >
-              <Upload size={16} />
-              Start Verifying
-              <ChevronRight size={16} />
-            </Link>
-          </motion.div>
-        </div>
-      </section>
 
       {/* Footer */}
       <footer
@@ -733,7 +684,7 @@ export function LandingPage() {
 
             <div style={{ marginTop: "8px" }}>
               <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "rgba(176,196,222,0.35)", letterSpacing: "0.04em" }}>
-                Built with ♥ in Nigeria — <a href="https://certafrica.ng" className="no-underline" style={{ color: "#12A37B" }}>certafrica.ng</a>
+                Built with ♥ in Nigeria — <a href="https://certafrica.vercel.app" className="no-underline" style={{ color: "#12A37B" }}>certafrica.ng</a>
               </span>
             </div>
           </div>

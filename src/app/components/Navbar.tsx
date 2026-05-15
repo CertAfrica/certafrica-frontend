@@ -262,7 +262,7 @@ export function Navbar() {
                 </Link>
               ))}
               <Link
-                to="/verify"
+                to="/auth"
                 className="block px-4 py-3 rounded-xl no-underline text-center"
                 style={{
                   background: "linear-gradient(135deg, #0F6E56, #12A37B)",

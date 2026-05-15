@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { api, extractCheckoutUrl } from "../lib/api";
 import type { Wallet as WalletType, WalletTransaction } from "../lib/types";
 import { SkeletonPanel } from "../components/Skeletons";
+import { PaymentModal } from "../components/PaymentModal";
 
 function formatCurrency(value: string | number | undefined, currency = "NGN") {
   const amount = typeof value === "string" ? Number.parseFloat(value) : value ?? 0;
@@ -19,6 +20,8 @@ export function WalletPage() {
   const [loading, setLoading] = useState(true);
   const [topupAmount, setTopupAmount] = useState("2500");
   const [topupBusy, setTopupBusy] = useState(false);
+  const [paymentModalOpen, setPaymentModalOpen] = useState(false);
+  const [checkoutResult, setCheckoutResult] = useState<Awaited<ReturnType<typeof api.topupWallet>> | null>(null);
 
   const loadWallet = async () => {
     setLoading(true);
@@ -45,12 +48,13 @@ export function WalletPage() {
     setTopupBusy(true);
     try {
       const result = await api.topupWallet(amount);
+      setCheckoutResult(result);
+      setPaymentModalOpen(true);
       const checkoutUrl = extractCheckoutUrl(result.checkout);
       toast.success("Top-up checkout created.");
       if (checkoutUrl) {
         window.open(checkoutUrl, "_blank", "noopener,noreferrer");
       }
-      await loadWallet();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Unable to start the wallet top-up.");
     } finally {
@@ -226,6 +230,31 @@ export function WalletPage() {
           </>
         )}
       </div>
+
+      <PaymentModal
+        isOpen={paymentModalOpen}
+        checkoutUrl={checkoutResult ? extractCheckoutUrl(checkoutResult.checkout) : null}
+        transactionRef={checkoutResult?.transaction?.reference ?? null}
+        amount={checkoutResult?.transaction ? Number(checkoutResult.transaction.amount) : undefined}
+        type="wallet_topup"
+        onClose={() => {
+          setPaymentModalOpen(false);
+          setCheckoutResult(null);
+        }}
+        onVerify={async (ref) => {
+          try {
+            const result = await api.verifyPayment(ref);
+            return result.processed === true;
+          } catch {
+            return false;
+          }
+        }}
+        onSuccess={async () => {
+          await loadWallet();
+          setPaymentModalOpen(false);
+          setCheckoutResult(null);
+        }}
+      />
     </div>
   );
 }

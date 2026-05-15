@@ -22,6 +22,7 @@ import { ScoreRing } from "../components/ScoreRing";
 import { PaymentModal } from "../components/PaymentModal";
 import { useAuth } from "../context/AuthContext";
 import { api, extractCheckoutUrl } from "../lib/api";
+import { formatFriendlyDate } from "../lib/date";
 import type {
   PaymentCheckoutResponse,
   Scan,
@@ -660,7 +661,7 @@ export function VerifyPage() {
                 <div className="flex items-center justify-between">
                   <span>Monthly reset</span>
                   <span style={{ color: "#F0F6FF", fontSize: "12px" }}>
-                    {usage?.resetAt ? new Date(usage.resetAt).toLocaleDateString() : "—"}
+                    {usage?.resetAt ? formatFriendlyDate(usage.resetAt) : "—"}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">

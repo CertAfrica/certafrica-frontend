@@ -12,6 +12,7 @@ import {
   Wallet,
 } from "lucide-react";
 import type { BillingHistoryItem, Scan, ScanUsageSummary, Wallet as WalletType } from "../../lib/types";
+import { formatFriendlyDate } from "../../lib/date";
 import { DashboardSummary, EmptyState, ProgressBar, ScanRow, StatCard, formatCurrency } from "./shared";
 
 interface Props {
@@ -98,7 +99,7 @@ export function ProDashboard({
                 MONTHLY USAGE
               </div>
               <div style={{ color: "#F0F6FF", marginTop: "4px" }}>
-                {usage?.resetAt ? `Resets ${new Date(usage.resetAt).toLocaleDateString()}` : "—"}
+                {usage?.resetAt ? `Resets ${formatFriendlyDate(usage.resetAt)}` : "—"}
               </div>
             </div>
             <TrendingUp size={16} color="#12A37B" />

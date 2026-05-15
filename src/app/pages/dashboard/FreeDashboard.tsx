@@ -1,6 +1,7 @@
 import { Link } from "react-router";
 import { ArrowUpRight, CheckCircle2, FileText, Search, Sparkles, Upload, Zap } from "lucide-react";
 import type { Scan, ScanUsageSummary } from "../../lib/types";
+import { formatFriendlyDate } from "../../lib/date";
 import { DashboardSummary, EmptyState, ProgressBar, ScanRow, StatCard } from "./shared";
 
 interface Props {
@@ -62,7 +63,7 @@ export function FreeDashboard({ usage, scans, filtered, search, setSearch }: Pro
             value={used}
             max={limit || 1}
             label={`Used ${used} of ${limit}`}
-            rightLabel={usage?.resetAt ? `Resets ${new Date(usage.resetAt).toLocaleDateString()}` : ""}
+            rightLabel={usage?.resetAt ? `Resets ${formatFriendlyDate(usage.resetAt)}` : ""}
           />
 
           <div className="flex flex-wrap gap-3 mt-6">

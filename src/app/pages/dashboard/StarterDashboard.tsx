@@ -1,6 +1,7 @@
 import { Link } from "react-router";
 import { CreditCard, Loader2, Search, Sparkles, Upload, Wallet, Zap } from "lucide-react";
 import type { Scan, ScanUsageSummary, Wallet as WalletType } from "../../lib/types";
+import { formatFriendlyDate } from "../../lib/date";
 import { DashboardSummary, EmptyState, ProgressBar, ScanRow, StatCard, formatCurrency } from "./shared";
 
 interface Props {
@@ -80,7 +81,7 @@ export function StarterDashboard({
             max={limit || 1}
             color="#3B8BD4"
             label={`Used ${used} of ${limit}`}
-            rightLabel={usage?.resetAt ? `Resets ${new Date(usage.resetAt).toLocaleDateString()}` : ""}
+            rightLabel={usage?.resetAt ? `Resets ${formatFriendlyDate(usage.resetAt)}` : ""}
           />
 
           <div className="flex flex-wrap gap-3 mt-6">

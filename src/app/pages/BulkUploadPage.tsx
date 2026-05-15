@@ -1,12 +1,15 @@
 import { FormEvent, useMemo, useState, type ChangeEvent } from "react";
 import { toast } from "sonner";
-import { Upload, Loader2 } from "lucide-react";
+import { Upload, Loader2, FileText, X } from "lucide-react";
 import { api, extractCheckoutUrl } from "../lib/api";
 import type { BulkPricing } from "../lib/types";
-import { PlanGate } from "../components/PlanGate";
 
 function formatCurrency(value: number, currency = "NGN") {
-  return new Intl.NumberFormat("en-NG", { style: "currency", currency, maximumFractionDigits: 0 }).format(value);
+  return new Intl.NumberFormat("en-NG", {
+    style: "currency",
+    currency,
+    maximumFractionDigits: 0,
+  }).format(value);
 }
 
 export function BulkUploadPage() {
@@ -19,10 +22,20 @@ export function BulkUploadPage() {
   const handleFiles = (event: ChangeEvent<HTMLInputElement>) => {
     const list = Array.from(event.target.files ?? []);
     setFiles(list);
+    void fetchPricing(list.length);
+  };
+
+  const removeFile = (index: number) => {
+    const next = files.filter((_, i) => i !== index);
+    setFiles(next);
+    void fetchPricing(next.length);
   };
 
   const fetchPricing = async (scanCount: number) => {
-    if (!scanCount) return;
+    if (!scanCount) {
+      setPricing(null);
+      return;
+    }
     try {
       const result = await api.getBulkPricing(scanCount);
       setPricing(result);
@@ -60,38 +73,164 @@ export function BulkUploadPage() {
   };
 
   const pricingCopy = useMemo(() => {
-    if (!pricing || !count) return "Select files to preview bulk pricing.";
-    return `Unit price ${formatCurrency(pricing.unitPrice)} • total ${formatCurrency(pricing.total)} • discount ${Math.round(pricing.discountRate * 100)}%`;
+    if (!pricing || !count) return null;
+    return {
+      unit: formatCurrency(pricing.unitPrice),
+      total: formatCurrency(pricing.total),
+      discount: Math.round(pricing.discountRate * 100),
+    };
   }, [pricing, count]);
 
   return (
-    <PlanGate
-      allow={['PRO']}
-      title="Bulk verification is a Pro feature"
-      description="Bulk scan pricing, queue priority, and batch verification are only available on the Pro plan."
-    >
     <div className="min-h-screen pt-16 px-6 md:px-10 py-12">
       <div className="max-w-4xl mx-auto space-y-6">
         <div>
-          <div style={{ color: "rgba(176,196,222,0.5)", fontSize: "11px", letterSpacing: "0.08em" }}>BULK VERIFY</div>
-          <h1 style={{ fontFamily: "'Playfair Display', serif", color: "#F0F6FF", fontSize: "clamp(1.8rem, 3vw, 2.6rem)" }}>Bulk upload verification</h1>
+          <div style={{ color: "rgba(176,196,222,0.5)", fontSize: "11px", letterSpacing: "0.08em" }}>
+            BULK VERIFY
+          </div>
+          <h1
+            style={{
+              fontFamily: "'Playfair Display', serif",
+              color: "#F0F6FF",
+              fontSize: "clamp(1.8rem, 3vw, 2.6rem)",
+            }}
+          >
+            Bulk upload verification
+          </h1>
+          <p style={{ color: "rgba(176,196,222,0.7)", marginTop: "10px" }}>
+            Upload multiple certificates at once. Pricing scales with volume.
+          </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="rounded-3xl p-6" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" }}>
-          <label className="block mb-4">
-            <span className="block mb-2 text-sm" style={{ color: "rgba(176,196,222,0.8)" }}>Select certificate files</span>
-            <input type="file" multiple accept=".pdf,.png,.jpg,.jpeg" onChange={(event) => { handleFiles(event); void fetchPricing(event.target.files?.length ?? 0); }} className="w-full rounded-xl px-4 py-3" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", color: "#F0F6FF" }} />
+        <form
+          onSubmit={handleSubmit}
+          className="rounded-3xl p-6"
+          style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" }}
+        >
+          <label className="block">
+            <span className="block mb-2 text-sm" style={{ color: "rgba(176,196,222,0.8)" }}>
+              Select certificate files
+            </span>
+            <input
+              type="file"
+              multiple
+              accept=".pdf,.png,.jpg,.jpeg"
+              onChange={handleFiles}
+              className="w-full rounded-xl px-4 py-3"
+              style={{
+                background: "rgba(255,255,255,0.04)",
+                border: "1px solid rgba(255,255,255,0.08)",
+                color: "#F0F6FF",
+              }}
+            />
           </label>
-          <div className="rounded-2xl p-4 text-sm mb-4" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", color: "rgba(176,196,222,0.75)" }}>
-            {pricingCopy}
-          </div>
-          <button type="submit" disabled={busy || !files.length} className="inline-flex items-center gap-2 rounded-xl px-4 py-3 transition-opacity disabled:opacity-60" style={{ background: "linear-gradient(135deg, #0F6E56, #12A37B)", color: "white", fontWeight: 600 }}>
+
+          {files.length > 0 && (
+            <div className="mt-4 space-y-2">
+              {files.map((file, index) => (
+                <div
+                  key={`${file.name}-${index}`}
+                  className="flex items-center gap-3 rounded-xl px-3 py-2"
+                  style={{
+                    background: "rgba(255,255,255,0.03)",
+                    border: "1px solid rgba(255,255,255,0.06)",
+                  }}
+                >
+                  <FileText size={14} color="#12A37B" />
+                  <div className="flex-1 min-w-0">
+                    <div
+                      style={{
+                        color: "#F0F6FF",
+                        fontSize: "12px",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {file.name}
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => removeFile(index)}
+                    style={{
+                      background: "transparent",
+                      border: "none",
+                      color: "rgba(176,196,222,0.5)",
+                      cursor: "pointer",
+                    }}
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {pricingCopy && (
+            <div
+              className="grid grid-cols-3 gap-3 mt-4"
+              style={{ borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: "16px" }}
+            >
+              <div>
+                <div
+                  style={{
+                    fontFamily: "'IBM Plex Mono', monospace",
+                    fontSize: "9px",
+                    color: "rgba(176,196,222,0.4)",
+                    letterSpacing: "0.08em",
+                  }}
+                >
+                  UNIT PRICE
+                </div>
+                <div style={{ color: "#F0F6FF", fontWeight: 600, fontSize: "14px" }}>{pricingCopy.unit}</div>
+              </div>
+              <div>
+                <div
+                  style={{
+                    fontFamily: "'IBM Plex Mono', monospace",
+                    fontSize: "9px",
+                    color: "rgba(176,196,222,0.4)",
+                    letterSpacing: "0.08em",
+                  }}
+                >
+                  DISCOUNT
+                </div>
+                <div style={{ color: "#12A37B", fontWeight: 600, fontSize: "14px" }}>
+                  {pricingCopy.discount}% off
+                </div>
+              </div>
+              <div>
+                <div
+                  style={{
+                    fontFamily: "'IBM Plex Mono', monospace",
+                    fontSize: "9px",
+                    color: "rgba(176,196,222,0.4)",
+                    letterSpacing: "0.08em",
+                  }}
+                >
+                  TOTAL
+                </div>
+                <div style={{ color: "#F0F6FF", fontWeight: 600, fontSize: "14px" }}>{pricingCopy.total}</div>
+              </div>
+            </div>
+          )}
+
+          <button
+            type="submit"
+            disabled={busy || !files.length}
+            className="inline-flex items-center gap-2 rounded-xl px-4 py-3 mt-5 transition-opacity disabled:opacity-60"
+            style={{
+              background: "linear-gradient(135deg, #0F6E56, #12A37B)",
+              color: "white",
+              fontWeight: 600,
+            }}
+          >
             {busy ? <Loader2 size={16} className="animate-spin" /> : <Upload size={16} />}
-            {busy ? "Submitting…" : "Submit bulk verification"}
+            {busy ? "Submitting…" : `Submit ${count || ""} bulk ${count === 1 ? "scan" : "scans"}`}
           </button>
         </form>
       </div>
     </div>
-    </PlanGate>
   );
 }

@@ -179,3 +179,18 @@
     line-height: 1.5;
   }
 }
+
+
+@keyframes certafrica-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+@keyframes certafrica-fade-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.certafrica-fade-in {
+  animation: certafrica-fade-in 0.4s ease-out;
+}

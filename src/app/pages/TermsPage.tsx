@@ -2,7 +2,7 @@ import { Link } from "react-router";
 
 export function TermsPage() {
   return (
-    <div className="min-h-screen pt-16 px-6 md:px-10 py-16">
+    <div className="min-h-screen pt-26 px-6 md:px-10 py-16">
       <div className="max-w-4xl mx-auto">
         <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: "clamp(1.6rem, 3.5vw, 2.4rem)", color: "#F0F6FF", marginBottom: "8px" }}>Terms of Service</h1>
         <p style={{ color: "rgba(176,196,222,0.7)", marginBottom: "18px" }}>

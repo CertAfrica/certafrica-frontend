@@ -47,11 +47,13 @@ function scanLabel(value: string) {
 function scoreForScan(scan: Scan | null) {
   if (!scan) return 0;
   if (typeof scan.trustScore === "number") return Math.round(scan.trustScore);
+  // Show processing score for pending/processing states
+  if (scan.status === "PROCESSING" || scan.verificationStatus === "PROCESSING") return 52;
   if (scan.verificationStatus === "VERIFIED") return 91;
   if (scan.verificationStatus === "INCONCLUSIVE") return 66;
   if (scan.verificationStatus === "FLAGGED") return 34;
   if (scan.verificationStatus === "FAILED") return 22;
-  if (scan.status === "PROCESSING") return 52;
+  // Default for unknown states (should not normally occur)
   return 58;
 }
 
@@ -562,6 +564,10 @@ export function VerifyPage() {
                         ))}
                       </div>
                     </div>
+                  )}
+
+                  {verificationInProgress && (
+                    <VerificationProgressPanel />
                   )}
 
                   <div className="flex flex-wrap gap-2 mt-6 pt-5" style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}>

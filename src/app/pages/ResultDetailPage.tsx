@@ -158,6 +158,7 @@ export function ResultDetailPage() {
   const score = useMemo(() => (scan ? scoreForScan(scan) : 0), [scan]);
   const band = useMemo(() => scoreBand(score), [score]);
   const signals = useMemo(() => (scan ? signalBreakdown(score) : []), [scan, score]);
+  const isProcessing = scan?.status === "PROCESSING" || scan?.verificationStatus === "PROCESSING";
 
   const handleCopyLink = async () => {
     const url = `${window.location.origin}/results/${id}`;
@@ -372,57 +373,61 @@ export function ResultDetailPage() {
             border: `1px solid ${band.border}`,
           }}
         >
-          <div className="grid md:grid-cols-[200px_1fr] gap-6 md:gap-8 items-center">
-            <div className="flex justify-center md:justify-start">
-              <ScoreRing score={score} size={180} animate />
-            </div>
-            <div>
-              <div
-                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full mb-3"
-                style={{ background: `${band.color}1a`, border: `1px solid ${band.color}40` }}
-              >
-                <band.icon size={12} color={band.color} />
-                <span
+          {isProcessing ? (
+            <ProcessingHeroCard scan={scan} />
+          ) : (
+            <div className="grid md:grid-cols-[200px_1fr] gap-6 md:gap-8 items-center">
+              <div className="flex justify-center md:justify-start">
+                <ScoreRing score={score} size={180} animate />
+              </div>
+              <div>
+                <div
+                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full mb-3"
+                  style={{ background: `${band.color}1a`, border: `1px solid ${band.color}40` }}
+                >
+                  <band.icon size={12} color={band.color} />
+                  <span
+                    style={{
+                      color: band.color,
+                      fontFamily: "'IBM Plex Mono', monospace",
+                      fontSize: "10px",
+                      fontWeight: 600,
+                      letterSpacing: "0.08em",
+                    }}
+                  >
+                    {band.label.toUpperCase()}
+                  </span>
+                </div>
+                <h2
                   style={{
-                    color: band.color,
-                    fontFamily: "'IBM Plex Mono', monospace",
-                    fontSize: "10px",
-                    fontWeight: 600,
-                    letterSpacing: "0.08em",
+                    fontFamily: "'Playfair Display', serif",
+                    fontSize: "clamp(1.4rem, 3vw, 2rem)",
+                    color: "#F0F6FF",
+                    lineHeight: 1.2,
+                    marginBottom: "8px",
                   }}
                 >
-                  {band.label.toUpperCase()}
-                </span>
-              </div>
-              <h2
-                style={{
-                  fontFamily: "'Playfair Display', serif",
-                  fontSize: "clamp(1.4rem, 3vw, 2rem)",
-                  color: "#F0F6FF",
-                  lineHeight: 1.2,
-                  marginBottom: "8px",
-                }}
-              >
-                {band.description}
-              </h2>
-              <p style={{ color: "rgba(176,196,222,0.7)", fontSize: "13.5px", lineHeight: 1.7 }}>
-                The composite score combines visual forgery detection, security features, entity validation,
-                registry lookups, and document quality.
-              </p>
+                  {band.description}
+                </h2>
+                <p style={{ color: "rgba(176,196,222,0.7)", fontSize: "13.5px", lineHeight: 1.7 }}>
+                  The composite score combines visual forgery detection, security features, entity validation,
+                  registry lookups, and document quality.
+                </p>
 
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-5">
-                <MiniStat label="Status" value={scan.status.replaceAll("_", " ")} icon={ShieldCheck} />
-                <MiniStat label="Payment" value={scan.paymentStatus} icon={CreditCard} />
-                <MiniStat label="Price" value={formatCurrency(scan.price)} icon={Wallet} />
-                <MiniStat
-                  label="Code"
-                  value={scan.scanCode.slice(-8)}
-                  icon={Hash}
-                  monospace
-                />
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-5">
+                  <MiniStat label="Status" value={scan.status.replaceAll("_", " ")} icon={ShieldCheck} />
+                  <MiniStat label="Payment" value={scan.paymentStatus} icon={CreditCard} />
+                  <MiniStat label="Price" value={formatCurrency(scan.price)} icon={Wallet} />
+                  <MiniStat
+                    label="Code"
+                    value={scan.scanCode.slice(-8)}
+                    icon={Hash}
+                    monospace
+                  />
+                </div>
               </div>
             </div>
-          </div>
+          )}
         </motion.div>
 
         {/* Tabs */}
@@ -467,6 +472,143 @@ export function ResultDetailPage() {
           )}
           {tab === "data" && <DataTab ocrPairs={ocrPairs} scan={scan} />}
           {tab === "payment" && <PaymentTab scan={scan} />}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ProcessingHeroCard({ scan }: { scan: Scan }) {
+  const checkpoints = ["Extracting document data", "Checking registry records", "Finalizing score"];
+
+  return (
+    <div className="grid md:grid-cols-[200px_1fr] gap-6 md:gap-8 items-center">
+      <div className="flex justify-center md:justify-start">
+        <div className="relative flex items-center justify-center" style={{ width: 180, height: 180 }}>
+          <motion.div
+            animate={{ scale: [1, 1.05, 1], opacity: [0.55, 0.92, 0.55] }}
+            transition={{ duration: 2.1, repeat: Infinity, ease: "easeInOut" }}
+            className="absolute inset-0 rounded-full"
+            style={{ background: "radial-gradient(circle, rgba(18,163,123,0.22), transparent 68%)" }}
+          />
+          <motion.div
+            animate={{ rotate: 360 }}
+            transition={{ duration: 3.2, repeat: Infinity, ease: "linear" }}
+            className="absolute inset-2 rounded-full"
+            style={{
+              border: "1px solid rgba(18,163,123,0.2)",
+              borderTopColor: "rgba(18,163,123,0.9)",
+              borderRightColor: "rgba(18,163,123,0.45)",
+            }}
+          />
+          <motion.div
+            animate={{ rotate: -360 }}
+            transition={{ duration: 5.5, repeat: Infinity, ease: "linear" }}
+            className="absolute inset-7 rounded-full"
+            style={{ border: "1px dashed rgba(176,196,222,0.16)" }}
+          />
+          <div className="relative text-center px-4">
+            <Loader2 className="mx-auto mb-3 animate-spin" size={28} color="#12A37B" />
+            <div style={{ color: "#F0F6FF", fontSize: "15px", fontWeight: 600, marginBottom: "2px" }}>
+              Verification running
+            </div>
+            <div style={{ color: "rgba(176,196,222,0.6)", fontSize: "11px", lineHeight: 1.5 }}>
+              We’ll update this report as soon as analysis completes.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div
+          className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full mb-3"
+          style={{ background: "rgba(18,163,123,0.1)", border: "1px solid rgba(18,163,123,0.22)" }}
+        >
+          <Loader2 size={12} color="#12A37B" className="animate-spin" />
+          <span
+            style={{
+              color: "#12A37B",
+              fontFamily: "'IBM Plex Mono', monospace",
+              fontSize: "10px",
+              fontWeight: 600,
+              letterSpacing: "0.08em",
+            }}
+          >
+            PROCESSING
+          </span>
+        </div>
+
+        <h2
+          style={{
+            fontFamily: "'Playfair Display', serif",
+            fontSize: "clamp(1.4rem, 3vw, 2rem)",
+            color: "#F0F6FF",
+            lineHeight: 1.2,
+            marginBottom: "8px",
+          }}
+        >
+          Your certificate is being analyzed
+        </h2>
+        <p style={{ color: "rgba(176,196,222,0.7)", fontSize: "13.5px", lineHeight: 1.7 }}>
+          The system is extracting text, validating registry matches, and calculating a trust score in real
+          time. No preliminary score is shown until the analysis is complete.
+        </p>
+
+        <div className="mt-5 grid gap-3">
+          {checkpoints.map((checkpoint, index) => (
+            <div
+              key={checkpoint}
+              className="flex items-center justify-between rounded-xl px-3 py-2.5"
+              style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.05)" }}
+            >
+              <div className="flex items-center gap-3">
+                <motion.span
+                  animate={{ opacity: [0.35, 1, 0.35] }}
+                  transition={{ duration: 1.4, repeat: Infinity, delay: index * 0.18 }}
+                  className="flex h-2.5 w-2.5 rounded-full"
+                  style={{ background: index === 0 ? "#F59E0B" : index === 1 ? "#3B8BD4" : "#12A37B" }}
+                />
+                <span style={{ color: "#F0F6FF", fontSize: "12.5px" }}>{checkpoint}</span>
+              </div>
+              <span
+                style={{
+                  color: "rgba(176,196,222,0.55)",
+                  fontFamily: "'IBM Plex Mono', monospace",
+                  fontSize: "10px",
+                  letterSpacing: "0.08em",
+                }}
+              >
+                ACTIVE
+              </span>
+            </div>
+          ))}
+        </div>
+
+        <div className="mt-5 grid grid-cols-3 gap-3">
+          {[
+            ["Status", scan.status.replaceAll("_", " ")],
+            ["Payment", scan.paymentStatus],
+            ["Report", "pending"],
+          ].map(([label, value]) => (
+            <div
+              key={label}
+              className="rounded-xl px-3 py-2.5 text-center"
+              style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.05)" }}
+            >
+              <div
+                style={{
+                  fontFamily: "'IBM Plex Mono', monospace",
+                  fontSize: "9px",
+                  color: "rgba(176,196,222,0.45)",
+                  letterSpacing: "0.08em",
+                  marginBottom: "3px",
+                }}
+              >
+                {label}
+              </div>
+              <div style={{ color: "#F0F6FF", fontSize: "12px", fontWeight: 600 }}>{value}</div>
+            </div>
+          ))}
         </div>
       </div>
     </div>

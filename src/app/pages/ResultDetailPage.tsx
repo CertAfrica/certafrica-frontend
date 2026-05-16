@@ -158,7 +158,13 @@ export function ResultDetailPage() {
   const score = useMemo(() => (scan ? scoreForScan(scan) : 0), [scan]);
   const band = useMemo(() => scoreBand(score), [score]);
   const signals = useMemo(() => (scan ? signalBreakdown(score) : []), [scan, score]);
-  const isProcessing = scan?.status === "PROCESSING" || scan?.verificationStatus === "PROCESSING";
+  const isProcessing = 
+    scan?.status === "PROCESSING" || 
+    scan?.verificationStatus === "PROCESSING" ||
+    (scan?.verificationStatus !== "VERIFIED" && 
+     scan?.verificationStatus !== "INCONCLUSIVE" && 
+     scan?.verificationStatus !== "FLAGGED" && 
+     scan?.verificationStatus !== "FAILED");
 
   const handleCopyLink = async () => {
     const url = `${window.location.origin}/results/${id}`;
@@ -1157,6 +1163,142 @@ function PaymentTab({ scan }: { scan: Scan }) {
             </div>
           </div>
         )}
+      </div>
+    </div>
+  );
+}
+
+function VerificationProgressPanel() {
+  const checkpoints = [
+    "Reading document structure",
+    "Cross-checking registry data",
+    "Running forgery analysis",
+  ];
+
+  return (
+    <div
+      className="rounded-3xl p-5 md:p-6 overflow-hidden relative"
+      style={{
+        background: "linear-gradient(135deg, rgba(18,163,123,0.08), rgba(255,255,255,0.03))",
+        border: "1px solid rgba(18,163,123,0.18)",
+      }}
+    >
+      <div className="absolute inset-0 pointer-events-none" style={{ opacity: 0.7 }}>
+        <motion.div
+          animate={{ x: ["-15%", "115%"] }}
+          transition={{ duration: 2.4, repeat: Infinity, ease: "linear" }}
+          className="absolute left-0 top-0 h-full w-1/3"
+          style={{
+            background: "linear-gradient(90deg, transparent, rgba(18,163,123,0.18), transparent)",
+            filter: "blur(10px)",
+          }}
+        />
+      </div>
+
+      <div className="relative grid gap-5 md:grid-cols-[180px_1fr] items-center">
+        <div className="flex justify-center md:justify-start">
+          <div className="relative flex items-center justify-center" style={{ width: 170, height: 170 }}>
+            <motion.div
+              animate={{ scale: [1, 1.06, 1], opacity: [0.55, 0.9, 0.55] }}
+              transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut" }}
+              className="absolute inset-0 rounded-full"
+              style={{ background: "radial-gradient(circle, rgba(18,163,123,0.22), transparent 68%)" }}
+            />
+            <motion.div
+              animate={{ rotate: 360 }}
+              transition={{ duration: 3.5, repeat: Infinity, ease: "linear" }}
+              className="absolute inset-3 rounded-full"
+              style={{
+                border: "1px solid rgba(18,163,123,0.18)",
+                borderTopColor: "rgba(18,163,123,0.85)",
+                borderRightColor: "rgba(18,163,123,0.42)",
+              }}
+            />
+            <motion.div
+              animate={{ rotate: -360 }}
+              transition={{ duration: 6, repeat: Infinity, ease: "linear" }}
+              className="absolute inset-8 rounded-full"
+              style={{ border: "1px dashed rgba(176,196,222,0.16)" }}
+            />
+            <div className="relative text-center px-4">
+              <Loader2 className="mx-auto mb-3 animate-spin" size={26} color="#12A37B" />
+              <div style={{ color: "#F0F6FF", fontSize: "14px", fontWeight: 600, marginBottom: "2px" }}>
+                Verifying
+              </div>
+              <div style={{ color: "rgba(176,196,222,0.6)", fontSize: "11px", lineHeight: 1.4 }}>
+                Please keep this tab open while the analysis completes.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div
+            style={{
+              fontFamily: "'IBM Plex Mono', monospace",
+              fontSize: "10px",
+              color: "rgba(176,196,222,0.4)",
+              letterSpacing: "0.08em",
+            }}
+          >
+            ANALYSIS IN PROGRESS
+          </div>
+          <h3 style={{ color: "#F0F6FF", fontSize: "1.15rem", marginTop: "4px", marginBottom: "8px" }}>
+            We're preparing the final report
+          </h3>
+          <p style={{ color: "rgba(176,196,222,0.7)", fontSize: "13px", lineHeight: 1.7, margin: 0 }}>
+            The system is extracting text, validating document signals, and comparing the submission
+            against known registry patterns.
+          </p>
+
+          <div className="mt-5 space-y-3">
+            {checkpoints.map((checkpoint, index) => (
+              <div
+                key={checkpoint}
+                className="flex items-center gap-3 rounded-xl px-3 py-2.5"
+                style={{
+                  background: "rgba(255,255,255,0.03)",
+                  border: "1px solid rgba(255,255,255,0.05)",
+                }}
+              >
+                <motion.span
+                  animate={{ opacity: [0.35, 1, 0.35] }}
+                  transition={{ duration: 1.5, repeat: Infinity, delay: index * 0.2 }}
+                  className="flex h-2.5 w-2.5 rounded-full"
+                  style={{ background: index === 1 ? "#12A37B" : index === 2 ? "#3B8BD4" : "#F59E0B" }}
+                />
+                <span style={{ color: "#F0F6FF", fontSize: "12.5px" }}>{checkpoint}</span>
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-5 grid grid-cols-3 gap-3">
+            {[
+              ["OCR", "running"],
+              ["Registry", "checking"],
+              ["Score", "pending"],
+            ].map(([label, value]) => (
+              <div
+                key={label}
+                className="rounded-xl px-3 py-2.5 text-center"
+                style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.05)" }}
+              >
+                <div
+                  style={{
+                    fontFamily: "'IBM Plex Mono', monospace",
+                    fontSize: "9px",
+                    color: "rgba(176,196,222,0.45)",
+                    letterSpacing: "0.08em",
+                    marginBottom: "3px",
+                  }}
+                >
+                  {label}
+                </div>
+                <div style={{ color: "#F0F6FF", fontSize: "12px", fontWeight: 600 }}>{value}</div>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     </div>
   );

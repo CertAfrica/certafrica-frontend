@@ -437,48 +437,52 @@ export function ResultDetailPage() {
         </motion.div>
 
         {/* Tabs */}
-        <div
-          className="flex items-center gap-1 rounded-2xl p-1.5 w-full max-w-md"
-          style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)" }}
-        >
-          {(
-            [
-              { id: "overview", label: "Overview" },
-              { id: "data", label: "Extracted data" },
-              { id: "payment", label: "Payment" },
-            ] as const
-          ).map((item) => (
-            <button
-              key={item.id}
-              type="button"
-              onClick={() => setTab(item.id)}
-              className="flex-1 rounded-xl px-3 py-2"
-              style={{
-                background: tab === item.id ? "rgba(18,163,123,0.14)" : "transparent",
-                border: tab === item.id ? "1px solid rgba(18,163,123,0.28)" : "1px solid transparent",
-                color: tab === item.id ? "#12A37B" : "rgba(176,196,222,0.78)",
-                fontSize: "12.5px",
-                fontWeight: 500,
-                cursor: "pointer",
-              }}
+        {!isProcessing && (
+          <>
+            <div
+              className="flex items-center gap-1 rounded-2xl p-1.5 w-full max-w-md"
+              style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)" }}
             >
-              {item.label}
-            </button>
-          ))}
-        </div>
+              {(
+                [
+                  { id: "overview", label: "Overview" },
+                  { id: "data", label: "Extracted data" },
+                  { id: "payment", label: "Payment" },
+                ] as const
+              ).map((item) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => setTab(item.id)}
+                  className="flex-1 rounded-xl px-3 py-2"
+                  style={{
+                    background: tab === item.id ? "rgba(18,163,123,0.14)" : "transparent",
+                    border: tab === item.id ? "1px solid rgba(18,163,123,0.28)" : "1px solid transparent",
+                    color: tab === item.id ? "#12A37B" : "rgba(176,196,222,0.78)",
+                    fontSize: "12.5px",
+                    fontWeight: 500,
+                    cursor: "pointer",
+                  }}
+                >
+                  {item.label}
+                </button>
+              ))}
+            </div>
 
-        {/* Tab content */}
-        <div className="certafrica-fade-in">
-          {tab === "overview" && (
-            <OverviewTab
-              scan={scan}
-              signals={signals}
-              anomalyPairs={anomalyPairs}
-            />
-          )}
-          {tab === "data" && <DataTab ocrPairs={ocrPairs} scan={scan} />}
-          {tab === "payment" && <PaymentTab scan={scan} />}
-        </div>
+            {/* Tab content */}
+            <div className="certafrica-fade-in">
+              {tab === "overview" && (
+                <OverviewTab
+                  scan={scan}
+                  signals={signals}
+                  anomalyPairs={anomalyPairs}
+                />
+              )}
+              {tab === "data" && <DataTab ocrPairs={ocrPairs} scan={scan} />}
+              {tab === "payment" && <PaymentTab scan={scan} />}
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

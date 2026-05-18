@@ -336,12 +336,17 @@ export function PricingPage() {
         }}
         onSuccess={async () => {
           if (pendingPlan) {
-            toast.success(`Welcome to ${pendingPlan}! Your plan is now active.`);
+            toast.message(`Waiting for your ${pendingPlan} plan to appear in your account…`);
           }
           try {
-            await refreshSession();
+            const updatedUser = await refreshSession(pendingPlan ?? undefined);
+            if (pendingPlan && updatedUser?.plan === pendingPlan) {
+              toast.success(`Welcome to ${pendingPlan}! Your plan is now active.`);
+            } else if (pendingPlan) {
+              toast.message("Payment was confirmed, but the plan is still syncing. Please refresh in a moment.");
+            }
           } catch {
-            // session refresh failure is non-fatal — toast already shown
+            toast.error("Payment was confirmed, but we couldn't refresh your account yet.");
           }
           setPaymentModalOpen(false);
           setPendingPlan(null);

@@ -12,7 +12,7 @@ export interface PaymentModalProps {
   isAutoVerifying?: boolean;
   onClose: () => void;
   onVerify: (transactionRef: string) => Promise<boolean>;
-  onSuccess?: () => void;
+  onSuccess?: () => void | Promise<void>;
 }
 
 export function PaymentModal({
@@ -28,6 +28,7 @@ export function PaymentModal({
 }: PaymentModalProps) {
   const [verifying, setVerifying] = useState(false);
   const [verified, setVerified] = useState(false);
+  const [finalizing, setFinalizing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const handleVerifyPayment = async () => {
@@ -41,7 +42,8 @@ export function PaymentModal({
       if (success) {
         setVerified(true);
         toast.success("Payment verified successfully!");
-        onSuccess?.();
+        setFinalizing(true);
+        await onSuccess?.();
         onClose();
       } else {
         setError("Payment not completed yet. Please complete the transaction on Squad.");
@@ -119,11 +121,23 @@ export function PaymentModal({
                     animate={{ opacity: 1, y: 0 }}
                     className="flex flex-col items-center justify-center py-8 text-center"
                   >
-                    <div className="mb-4 rounded-full p-3" style={{ background: "rgba(18,163,123,0.15)" }}>
-                      <CheckCircle2 size={32} color="#12A37B" />
-                    </div>
-                    <h3 style={{ color: "#F0F6FF", fontSize: "1rem", marginBottom: "4px" }}>Payment Verified</h3>
-                    <p style={{ color: "rgba(176,196,222,0.6)", fontSize: "13px", margin: 0 }}>Your transaction has been confirmed by Squad.</p>
+                    {finalizing ? (
+                      <>
+                        <Loader2 size={32} className="animate-spin mb-4" color="#12A37B" />
+                        <h3 style={{ color: "#F0F6FF", fontSize: "1rem", marginBottom: "4px" }}>Updating your plan</h3>
+                        <p style={{ color: "rgba(176,196,222,0.6)", fontSize: "13px", margin: 0 }}>
+                          We&apos;re polling `GET /me` until your new subscription shows up.
+                        </p>
+                      </>
+                    ) : (
+                      <>
+                        <div className="mb-4 rounded-full p-3" style={{ background: "rgba(18,163,123,0.15)" }}>
+                          <CheckCircle2 size={32} color="#12A37B" />
+                        </div>
+                        <h3 style={{ color: "#F0F6FF", fontSize: "1rem", marginBottom: "4px" }}>Payment Verified</h3>
+                        <p style={{ color: "rgba(176,196,222,0.6)", fontSize: "13px", margin: 0 }}>Your transaction has been confirmed by Squad.</p>
+                      </>
+                    )}
                   </motion.div>
                 ) : checkoutUrl ? (
                   <div className="space-y-4">
@@ -179,10 +193,11 @@ export function PaymentModal({
               <div className="px-6 py-4 border-t" style={{ borderColor: "rgba(255,255,255,0.06)" }}>
                 <button
                   onClick={onClose}
+                  disabled={finalizing}
                   className="w-full py-2 rounded-lg transition-colors"
-                  style={{ background: "rgba(255,255,255,0.04)", color: "rgba(176,196,222,0.7)", border: "none", cursor: "pointer" }}
+                  style={{ background: "rgba(255,255,255,0.04)", color: "rgba(176,196,222,0.7)", border: "none", cursor: finalizing ? "wait" : "pointer", opacity: finalizing ? 0.7 : 1 }}
                 >
-                  {verified ? "Close" : "Cancel"}
+                  {verified ? (finalizing ? "Updating…" : "Close") : "Cancel"}
                 </button>
               </div>
             </div>

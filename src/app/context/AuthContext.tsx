@@ -14,7 +14,7 @@ interface AuthContextValue {
   login: (payload: { email: string; password: string }) => Promise<void>;
   signup: (payload: { name: string; email: string; password: string }) => Promise<void>;
   logout: () => void;
-  refreshSession: () => Promise<void>;
+  refreshSession: (targetPlan?: AuthUser["plan"]) => Promise<AuthUser | null>;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -26,6 +26,8 @@ function persistAuth(result: AuthResponse): StoredAuth {
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<StoredAuth | null>(() => readStoredAuth());
   const [status, setStatus] = useState<AuthStatus>(session ? "loading" : "anonymous");
+
+  const sleep = (ms: number) => new Promise((resolve) => window.setTimeout(resolve, ms));
 
   useEffect(() => {
     let active = true;
@@ -79,13 +81,46 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSession(null);
       setStatus("anonymous");
     },
-    refreshSession: async () => {
-      if (!session?.refreshToken) return;
-      const tokens = await api.refresh({ refreshToken: session.refreshToken });
-      const freshUser = await api.getMe();
-      const next = persistAuth({ user: freshUser as any, ...tokens });
-      setSession(next);
-      setStatus("authenticated");
+    refreshSession: async (targetPlan) => {
+      if (!session?.refreshToken) return null;
+      let accessToken = session.accessToken ?? "";
+      let refreshToken = session.refreshToken;
+      let refreshedTokens = false;
+      const maxAttempts = targetPlan ? 8 : 1;
+
+      for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+        try {
+          const freshUser = await api.getMe();
+          const next = persistAuth({
+            user: freshUser as AuthUser,
+            accessToken,
+            refreshToken,
+          });
+          setSession(next);
+          setStatus("authenticated");
+
+          if (!targetPlan || freshUser.plan === targetPlan) {
+            return freshUser as AuthUser;
+          }
+        } catch {
+          if (!refreshedTokens) {
+            const tokens = await api.refresh({ refreshToken });
+            accessToken = tokens.accessToken;
+            refreshToken = tokens.refreshToken;
+            refreshedTokens = true;
+            attempt -= 1;
+            continue;
+          }
+
+          throw new Error("Unable to refresh account details.");
+        }
+
+        if (attempt < maxAttempts - 1) {
+          await sleep(2000);
+        }
+      }
+
+      return session.user ?? null;
     },
   }), [session, status]);
 

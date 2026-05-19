@@ -266,7 +266,7 @@ export function PricingPage() {
                     </button>
                   ) : (
                     <Link
-                      to="/verify"
+                      to="/auth"
                       className="w-full inline-flex items-center justify-center gap-2 rounded-xl px-4 py-3 no-underline"
                       style={{
                         background: "linear-gradient(135deg, #0F6E56, #12A37B)",

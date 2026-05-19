@@ -1,14 +1,22 @@
+/// <reference types="vite/client" />
+
 import { readStoredAuth } from "./auth";
 import type {
+  AdminRefundRecord,
+  AdminScanRecord,
+  AdminUserRecord,
   AuthResponse,
   BillingHistoryItem,
   BulkPricing,
   BulkScanResponse,
   PaymentCheckoutResponse,
   PagedScans,
+  RetrainResponse,
   Scan,
   ScanUsageSummary,
   ScanSubmissionResponse,
+  TrainingStatsResponse,
+  TrainingUploadResponse,
   Wallet,
 } from "./types";
 
@@ -127,6 +135,30 @@ export const api = {
 
   inviteTeamMember: (payload: { email: string; role?: "OWNER" | "ADMIN" | "REVIEWER" }) =>
     apiRequest<{ organization: Record<string, unknown>; member: Record<string, unknown> }>("/api/team/invite", { method: "POST", body: payload }),
+
+  getAdminUsers: (page = 1, limit = 20) =>
+    apiRequest<{ items: AdminUserRecord[]; total: number; page: number; limit: number }>(`/api/admin/users?page=${page}&limit=${limit}`, { method: "GET" }),
+
+  getAdminScans: (page = 1, limit = 20) =>
+    apiRequest<{ items: AdminScanRecord[]; total: number; page: number; limit: number }>(`/api/admin/scans?page=${page}&limit=${limit}`, { method: "GET" }),
+
+  getAdminRefunds: (page = 1, limit = 20) =>
+    apiRequest<{ items: AdminRefundRecord[]; total: number; page: number; limit: number }>(`/api/admin/refunds?page=${page}&limit=${limit}`, { method: "GET" }),
+
+  getTrainingStats: () => apiRequest<TrainingStatsResponse>("/api/admin/training/stats", { method: "GET" }),
+
+  uploadTrainingSample: (payload: { certificate: File; certType: string; institution?: string }) => {
+    const formData = new FormData();
+    formData.append("certificate", payload.certificate);
+    formData.append("cert_type", payload.certType);
+    if (payload.institution) {
+      formData.append("institution", payload.institution);
+    }
+    return apiRequest<TrainingUploadResponse>("/api/admin/training/upload", { method: "POST", body: formData });
+  },
+
+  retrainModel: (force = false) =>
+    apiRequest<RetrainResponse>(`/api/admin/training/retrain${force ? "?force=true" : ""}`, { method: "POST" }),
 };
 
 export function extractCheckoutUrl(checkout: Record<string, unknown> | null | undefined) {

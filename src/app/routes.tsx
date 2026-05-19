@@ -1,6 +1,7 @@
 import { createBrowserRouter } from "react-router";
 import { Root } from "./Root";
 import { ProtectedRoute } from "./components/ProtectedRoute";
+import { AdminRoute } from "./components/AdminRoute";
 import { PlanRoute } from "./components/PlanRoute";
 import { LandingPage } from "./pages/LandingPage";
 import { VerifyPage } from "./pages/VerifyPage";
@@ -17,6 +18,12 @@ import { OnboardingPage } from "./pages/OnboardingPage";
 import { SettingsPage } from "./pages/SettingsPage";
 import { NotFoundPage } from "./pages/NotFoundPage";
 import AuthPage from "./pages/AuthPage";
+import { AdminOverviewPage } from "./pages/admin/AdminOverviewPage";
+import { AdminRetrainPage } from "./pages/admin/AdminRetrainPage";
+import { AdminScansPage } from "./pages/admin/AdminScansPage";
+import { AdminTrainingPage } from "./pages/admin/AdminTrainingPage";
+import { AdminRefundsPage } from "./pages/admin/AdminRefundsPage";
+import { AdminUsersPage } from "./pages/admin/AdminUsersPage";
 
 export const router = createBrowserRouter([
   {
@@ -54,6 +61,54 @@ export const router = createBrowserRouter([
           <ProtectedRoute>
             <SettingsPage />
           </ProtectedRoute>
+        ),
+      },
+      {
+        path: "admin",
+        element: (
+          <AdminRoute>
+            <AdminOverviewPage />
+          </AdminRoute>
+        ),
+      },
+      {
+        path: "admin/training",
+        element: (
+          <AdminRoute>
+            <AdminTrainingPage />
+          </AdminRoute>
+        ),
+      },
+      {
+        path: "admin/retrain",
+        element: (
+          <AdminRoute>
+            <AdminRetrainPage />
+          </AdminRoute>
+        ),
+      },
+      {
+        path: "admin/users",
+        element: (
+          <AdminRoute>
+            <AdminUsersPage />
+          </AdminRoute>
+        ),
+      },
+      {
+        path: "admin/scans",
+        element: (
+          <AdminRoute>
+            <AdminScansPage />
+          </AdminRoute>
+        ),
+      },
+      {
+        path: "admin/refunds",
+        element: (
+          <AdminRoute>
+            <AdminRefundsPage />
+          </AdminRoute>
         ),
       },
       {

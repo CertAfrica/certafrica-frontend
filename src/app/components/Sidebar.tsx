@@ -4,6 +4,7 @@ import {
   CreditCard,
   FileText,
   Layers,
+  ShieldCheck,
   Settings,
   Users,
   Wallet,
@@ -19,10 +20,12 @@ export function Sidebar() {
   const isPro = user.plan === "PRO";
   const isStarter = user.plan === "STARTER";
   const showWallet = isStarter || isPro;
+  const isAdmin = user.role === "ADMIN";
 
   const links = [
     { to: "/dashboard", label: "Dashboard", icon: Layers, show: true },
     { to: "/verify", label: "Verify", icon: FileText, show: true },
+    { to: "/admin", label: "Admin portal", icon: ShieldCheck, show: isAdmin },
     { to: "/wallet", label: "Wallet", icon: Wallet, show: showWallet },
     { to: "/billing", label: "Billing", icon: CreditCard, show: showWallet },
     { to: "/team", label: "Team", icon: Users, show: isPro },

@@ -7,8 +7,9 @@ import { AuthProvider, useAuth } from "./context/AuthContext";
 function Shell() {
   const { isAuthenticated } = useAuth();
   const location = useLocation();
-  const protectedPrefixes = ["/auth", "/dashboard", "/verify", "/settings", "/results", "/wallet", "/billing", "/team", "/bulk"];
+  const protectedPrefixes = ["/auth", "/dashboard", "/admin", "/verify", "/settings", "/results", "/wallet", "/billing", "/team", "/bulk"];
   const showFooter = !protectedPrefixes.some((p) => location.pathname.startsWith(p));
+  const showSidebar = isAuthenticated && !location.pathname.startsWith("/admin");
 
   return (
     <div
@@ -16,8 +17,8 @@ function Shell() {
       style={{ background: "#08111E", fontFamily: "'IBM Plex Sans', sans-serif" }}
     >
       <Navbar />
-      {isAuthenticated && <Sidebar />}
-      <main className={isAuthenticated ? "md:pl-64" : ""}>
+      {showSidebar && <Sidebar />}
+      <main className={showSidebar ? "md:pl-64" : ""}>
         <Outlet />
       </main>
       <Toaster richColors position="top-right" closeButton />

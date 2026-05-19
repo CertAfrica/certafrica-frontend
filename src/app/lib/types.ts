@@ -191,3 +191,79 @@ export interface PaymentCheckoutResponse {
   plan?: PlanType;
   amount?: number;
 }
+
+export interface AdminUserRecord {
+  id: string;
+  name: string;
+  email: string;
+  role: Role;
+  plan: PlanType;
+  createdAt: string;
+  wallet?: Wallet | null;
+  subscriptions?: Array<{
+    id: string;
+    plan?: PlanType;
+    status?: string;
+    currentPeriodStart?: string | null;
+    currentPeriodEnd?: string | null;
+  }>;
+}
+
+export interface AdminScanRecord {
+  id: string;
+  scanCode: string;
+  fileName: string;
+  status: ScanStatus;
+  paymentStatus: PaymentStatus;
+  verificationStatus: VerificationStatus;
+  trustScore?: number | null;
+  flagged: boolean;
+  createdAt: string;
+  updatedAt: string;
+  user?: Pick<AuthUser, "id" | "name" | "email" | "plan"> | null;
+  transaction?: Transaction | null;
+  refund?: Refund | null;
+}
+
+export interface AdminRefundRecord {
+  id: string;
+  amount: string | number;
+  status: Refund["status"];
+  reason: string;
+  createdAt: string;
+  updatedAt: string;
+  user?: Pick<AuthUser, "id" | "name" | "email" | "plan"> | null;
+  scan?: Pick<Scan, "id" | "scanCode" | "fileName" | "verificationStatus"> | null;
+}
+
+export interface PagedResponse<T> {
+  items: T[];
+  total: number;
+  page: number;
+  limit: number;
+}
+
+export interface TrainingStatsResponse {
+  samples_per_label: Record<string, number>;
+  total_samples: number;
+  visual_references_per_label: Record<string, number>;
+  total_visual_references: number;
+  last_trained_at: string | null;
+  model_exists: boolean;
+}
+
+export interface TrainingUploadResponse {
+  sample_id: string;
+  label: string;
+  extracted_text_preview: string;
+  total_samples_for_label: number;
+  retrained: boolean;
+  visual_indexed: boolean;
+}
+
+export interface RetrainResponse {
+  trained: boolean;
+  reason?: string;
+  total_samples?: number;
+  label_distribution?: Record<string, number>;
+}

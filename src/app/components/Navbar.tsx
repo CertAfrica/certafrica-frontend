@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Link, useLocation } from "react-router";
-import { Shield, CircleUserRound, DoorOpen, Menu, X, LogOut, Settings, LayoutDashboard } from "lucide-react";
+import { Shield, CircleUserRound, DoorOpen, Menu, X, LogOut, Settings, LayoutDashboard, ShieldCheck } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 
 export function Navbar() {
@@ -9,6 +9,7 @@ export function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
+  const isAdmin = user?.role === "ADMIN";
 
   const publicLinks = [
     { to: "/pricing", label: "Pricing" },
@@ -189,6 +190,7 @@ export function Navbar() {
                 </div>
                 {[
                   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+                  ...(isAdmin ? [{ to: "/admin", label: "Admin Portal", icon: ShieldCheck }] : []),
                   { to: "/settings", label: "Settings", icon: Settings },
                 ].map((item) => (
                   <Link
@@ -285,6 +287,7 @@ export function Navbar() {
               {[
                 { to: "/dashboard", label: "Dashboard" },
                 { to: "/verify", label: "Verify" },
+                ...(isAdmin ? [{ to: "/admin", label: "Admin Portal" }] : []),
                 { to: "/settings", label: "Settings" },
               ].map((item) => (
                 <Link
